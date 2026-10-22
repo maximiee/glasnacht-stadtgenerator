@@ -77,3 +77,18 @@ export function streckeInPolygon(a: Point, b: Point, poly: Point[]): [Point, Poi
   }
   return out;
 }
+
+export function distZuStrecke(p: Point, a: Point, b: Point): number {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const l2 = dx * dx + dy * dy;
+  const t = l2 === 0 ? 0 : Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / l2));
+  return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
+}
+
+export function distZuLinie(p: Point, linie: Point[], geschlossen = false): number {
+  let d = Infinity;
+  const n = geschlossen ? linie.length : linie.length - 1;
+  for (let i = 0; i < n; i++) d = Math.min(d, distZuStrecke(p, linie[i]!, linie[(i + 1) % linie.length]!));
+  return d;
+}

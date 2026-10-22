@@ -2,6 +2,7 @@ import { HEIGHT, WIDTH, dist, inPolygon, smoothLine, type Point } from './geomet
 import { erzeugeUmriss, type Umriss } from './outline';
 import { createRng, type Rng } from './rng';
 import type { StadtDatei } from './stadt';
+import { erzeugeHaeuser, type Haus } from './haeuser';
 import { erzeugeViertel, type ViertelZelle } from './viertel';
 
 export interface Stadtplan extends Umriss {
@@ -10,6 +11,7 @@ export interface Stadtplan extends Umriss {
   grenzen: [Point, Point][];
   /** Straßen als Linienzüge, von der Mitte durch die Tore nach außen. */
   strassen: Point[][];
+  haeuser: Haus[];
 }
 
 /** Straße von a nach b mit leichtem Schwung. */
@@ -52,5 +54,7 @@ export function erzeugeStadtplan(s: StadtDatei): Stadtplan {
     const aussen = strasse(rng, tor, rand);
     strassen.push(ohneMeer([...innen, ...aussen.slice(1)], umriss.meer));
   }
-  return { ...umriss, name: s.name, viertel: zellen, grenzen, strassen };
+  const plan: Stadtplan = { ...umriss, name: s.name, viertel: zellen, grenzen, strassen, haeuser: [] };
+  plan.haeuser = erzeugeHaeuser(createRng(`${seed}#haeuser`), plan);
+  return plan;
 }

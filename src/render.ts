@@ -10,6 +10,8 @@ const FARBE = {
   mauer: '#4d514f',
   kartusche: '#f1f0d8',
   text: '#2e3430',
+  haus: '#c98a5a',
+  hausRand: '#7a4f33',
   grenze: '#9c8444',
   strasse: '#7a5f32',
 };
@@ -41,6 +43,7 @@ export function rendereSvg(u: Stadtplan, name = u.name): string {
   if (u.fluss) teile.push(`<path d="${pfad(u.fluss.flaeche, true)}" fill="${FARBE.wasser}" stroke="${FARBE.wasserRand}" stroke-width="1.5"/>`);
 
   teile.push(`<path d="${u.grenzen.map(([a, b]) => `M${a.x.toFixed(1)} ${a.y.toFixed(1)}L${b.x.toFixed(1)} ${b.y.toFixed(1)}`).join('')}" stroke="${FARBE.grenze}" stroke-width="1.5" stroke-dasharray="6 5" fill="none"/>`);
+  teile.push(`<path d="${u.haeuser.map(h => 'M' + h.ecken.map(e => `${e.x.toFixed(1)} ${e.y.toFixed(1)}`).join('L') + 'Z').join('')}" fill="${FARBE.haus}" stroke="${FARBE.hausRand}" stroke-width=".7"/>`);
   for (const l of u.strassen) teile.push(`<path d="${pfad(l, false)}" stroke="${FARBE.strasse}" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`);
 
   if (u.mauer) {
@@ -48,7 +51,7 @@ export function rendereSvg(u: Stadtplan, name = u.name): string {
     for (const p of u.mauer) teile.push(`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="6" fill="${FARBE.mauer}"/>`);
   }
 
-  const schrift = `font-family="Georgia, 'Times New Roman', serif" letter-spacing="3" font-size="19" text-anchor="middle" fill="${FARBE.text}"`;
+  const schrift = `font-family="Georgia, 'Times New Roman', serif" letter-spacing="3" font-size="19" text-anchor="middle" fill="${FARBE.text}" stroke="${FARBE.pergament}" stroke-width="4" paint-order="stroke" stroke-linejoin="round"`;
   for (const v of u.viertel) if (v.name) teile.push(`<text x="${v.mitte.x.toFixed(1)}" y="${v.mitte.y.toFixed(1)}" ${schrift}>${v.name.toUpperCase()}</text>`);
 
   teile.push(
