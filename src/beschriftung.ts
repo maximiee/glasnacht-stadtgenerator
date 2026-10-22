@@ -1,4 +1,4 @@
-import { inPolygon, type Point } from './geometry';
+import { HEIGHT, WIDTH, inPolygon, type Point } from './geometry';
 import type { Stadtplan } from './stadtplan';
 
 export interface Beschriftung {
@@ -38,8 +38,8 @@ function rechteck(zeilen: string[], x: number, y: number, anker: Beschriftung['a
  */
 export function legeBeschriftung(plan: Stadtplan): Beschriftung[] {
   const belegt: Rechteck[] = [];
-  // Gebäude der Orte und Kartenkopf sind Hindernisse.
-  belegt.push({ x0: 0, y0: 0, x1: 270, y1: 125 });
+  // Titel, Maßstab, Kompass, Rahmen und Gebäude der Orte sind Hindernisse.
+  belegt.push({ x0: WIDTH / 2 - 210, y0: 0, x1: WIDTH / 2 + 210, y1: 110 }, { x0: 0, y0: HEIGHT - 120, x1: 330, y1: HEIGHT }, { x0: WIDTH - 170, y0: HEIGHT - 170, x1: WIDTH, y1: HEIGHT });
   for (const o of plan.orte) belegt.push({ x0: o.mitte.x - 11, y0: o.mitte.y - 9, x1: o.mitte.x + 11, y1: o.mitte.y + 9 });
   const out: Beschriftung[] = [];
 
