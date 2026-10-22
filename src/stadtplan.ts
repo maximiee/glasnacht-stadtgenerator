@@ -53,11 +53,21 @@ function platzAbseitsVomFluss(mitte: Point, fluss: Umriss['fluss']): Point {
   return { x: nah.x + r.x * 80, y: nah.y + r.y * 80 };
 }
 
+/** Einheitsvektor von der Mitte zum Wasser (Meer oder nächster Flusspunkt), sonst null. */
+function richtungZumWasser(u: Umriss): Point | null {
+  const ziel = u.meer
+    ? { x: u.meer.reduce((a, p) => a + p.x, 0) / u.meer.length, y: u.meer.reduce((a, p) => a + p.y, 0) / u.meer.length }
+    : u.fluss?.mittellinie.reduce((b, p) => (dist(p, u.mitte) < dist(b, u.mitte) ? p : b)) ?? null;
+  if (!ziel) return null;
+  const d = dist(ziel, u.mitte) || 1;
+  return { x: (ziel.x - u.mitte.x) / d, y: (ziel.y - u.mitte.y) / d };
+}
+
 export function erzeugeStadtplan(s: StadtDatei): Stadtplan {
   const seed = s.seed ?? s.name;
   const umriss = erzeugeUmriss({ seed, wasser: s.wasser, radius: s.radius, mauer: s.mauer, lage: s.lage, tore: s.tore });
   // Eigene Zufallsfolgen, damit der Umriss gleich bleibt, wenn Viertel oder Straßen sich ändern.
-  const { zellen, grenzen } = erzeugeViertel(createRng(`${seed}#viertel`), umriss.innen, umriss.mitte, s.viertel ?? []);
+  const { zellen, grenzen } = erzeugeViertel(createRng(`${seed}#viertel`), umriss.innen, umriss.mitte, s.viertel ?? [], richtungZumWasser(umriss));
 
   const platz = platzAbseitsVomFluss(umriss.mitte, umriss.fluss);
   const rng = createRng(`${seed}#strassen`);
