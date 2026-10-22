@@ -89,3 +89,35 @@ describe('Mauer und Größe', () => {
     expect(radiusFuer({ einwohner: 80000 }) * meterProEinheit({ einwohner: 80000 })).toBeGreaterThan(3 * radiusFuer({ einwohner: 5000 }) * meterProEinheit({ einwohner: 5000 }));
   });
 });
+
+describe('Nichts im Wasser, nichts übereinander', () => {
+  const stadt = (wasser: 'fluss' | 'kueste' | 'keins', lage: string, name: string) =>
+    liesStadt({ version: 1, name, wasser, lage, einwohner: 30000, viertel: [{ name: 'Gärten' }, { name: 'Der Markt' }, { name: 'Hafenviertel', lage: 'wasser' }, { name: 'Altstadt' }, { name: 'Neustadt' }] });
+
+  for (const [wasser, lage] of [['kueste', 'west'], ['kueste', 'nordost'], ['kueste', 'sued'], ['fluss', 'nord-sued'], ['keins', '']] as const) {
+    it(`${wasser} ${lage}: Straßen und Gassen bleiben außerhalb des Meeres, Häuser außerhalb von Parks und Plätzen`, async () => {
+      const { erzeugeStadtplan } = await import('./stadtplan');
+      const { inPolygon, dist, distZuLinie } = await import('./geometry');
+      const { kuestenlinie } = await import('./ausstattung');
+      const p = erzeugeStadtplan(stadt(wasser, lage, `W-${wasser}-${lage}`));
+      if (p.meer) {
+        for (const l of p.strassen) for (const q of l) expect(inPolygon(q, p.meer)).toBe(false);
+        for (const l of p.strassen) expect(distZuLinie(l[l.length - 1]!, kuestenlinie(p.meer))).toBeGreaterThan(5);
+        for (const [a, b] of p.grenzen) expect(inPolygon({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, p.meer)).toBe(false);
+        for (const h of p.haeuser) for (const e of h.ecken) expect(inPolygon(e, p.meer)).toBe(false);
+        expect(p.hafen).not.toBeNull();
+      }
+      for (const h of p.haeuser) {
+        const m = { x: (h.ecken[0]!.x + h.ecken[2]!.x) / 2, y: (h.ecken[0]!.y + h.ecken[2]!.y) / 2 };
+        for (const pk of p.parks) expect(dist(m, pk.mitte)).toBeGreaterThan(pk.radius);
+        for (const pl of p.plaetze) expect(dist(m, pl.mitte)).toBeGreaterThan(pl.radius);
+      }
+      for (let i = 0; i < p.parks.length; i++) {
+        for (let j = i + 1; j < p.parks.length; j++) expect(dist(p.parks[i]!.mitte, p.parks[j]!.mitte)).toBeGreaterThan(p.parks[i]!.radius + p.parks[j]!.radius);
+        for (const pl of p.plaetze) expect(dist(p.parks[i]!.mitte, pl.mitte)).toBeGreaterThan(p.parks[i]!.radius + pl.radius);
+      }
+      expect(p.plaetze.length).toBeGreaterThan(0);
+      expect(p.parks.length).toBeGreaterThan(0);
+    });
+  }
+});

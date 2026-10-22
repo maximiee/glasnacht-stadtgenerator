@@ -4,6 +4,7 @@ import { createRng, type Rng } from './rng';
 import { meterProEinheit, radiusFuer, type Gelaende, type StadtDatei } from './stadt';
 import { erzeugeHaeuser, type Haus } from './haeuser';
 import { setzeOrte, type OrtMarke } from './orte';
+import { erzeugeHafen, erzeugePlaetzeUndParks, grenzenOhne, kuestenlinie, type Hafen, type Park, type Platz } from './ausstattung';
 import { erzeugeViertel, type ViertelZelle } from './viertel';
 
 export interface Stadtplan extends Umriss {
@@ -22,6 +23,10 @@ export interface Stadtplan extends Umriss {
   orte: OrtMarke[];
   /** Bäume (Gras, Gebirge, Eis) außerhalb der Stadt, in Gruppen. */
   baeume: Point[];
+  plaetze: Platz[];
+  parks: Park[];
+  /** Nur an der Küste. */
+  hafen: Hafen | null;
 }
 
 /** Straße von a nach b mit leichtem Schwung. */
@@ -46,10 +51,13 @@ function ohneMeer(linie: Point[], meer: Point[] | null): Point[] {
   return i < 0 ? linie : linie.slice(0, i);
 }
 
-/** Kürzt eine Straße so, dass sie 14 Einheiten vor dem Meer endet. */
+/** Kürzt eine Straße so, dass sie vor dem Meer endet (mindestens 10 Einheiten Abstand zum Ufer). */
 function kuerzeAmUfer(linie: Point[], meer: Point[] | null): Point[] {
-  const kurz = ohneMeer(linie, meer);
-  return kurz.length === linie.length ? linie : kurz.slice(0, Math.max(0, kurz.length - 2));
+  if (!meer) return linie;
+  const ufer = kuestenlinie(meer);
+  const kurz = [...ohneMeer(linie, meer)];
+  while (kurz.length > 2 && distZuLinie(kurz[kurz.length - 1]!, ufer) < 10) kurz.pop();
+  return kurz;
 }
 
 /** Wahr, wenn die Straße länger als eine Brücke im Fluss verläuft. */
@@ -94,10 +102,10 @@ function platzAbseitsVomFluss(mitte: Point, fluss: Umriss['fluss']): Point {
   if (!fluss) return mitte;
   const nah = fluss.mittellinie.reduce((b, p) => (dist(p, mitte) < dist(b, mitte) ? p : b));
   const d = dist(nah, mitte);
-  if (d > 75) return mitte;
+  if (d > 110) return mitte;
   // Zur Seite schieben, auf der die Mitte schon liegt (bei Gleichstand nach unten).
   const r = d < 1 ? { x: 0, y: 1 } : { x: (mitte.x - nah.x) / d, y: (mitte.y - nah.y) / d };
-  return { x: nah.x + r.x * 80, y: nah.y + r.y * 80 };
+  return { x: nah.x + r.x * 100, y: nah.y + r.y * 100 };
 }
 
 /** Einheitsvektor von der Mitte zum Wasser (Meer oder nächster Flusspunkt), sonst null. */
@@ -146,7 +154,14 @@ export function erzeugeStadtplan(s: StadtDatei): Stadtplan {
       break;
     }
   }
-  const plan: Stadtplan = { ...umriss, name: s.name, gelaende: s.gelaende ?? 'gras', meterProEinheit: meterProEinheit(s), viertel: zellen, grenzen, strassen, haeuser: [], orte: [], baeume: [], platz };
+  const plan: Stadtplan = { ...umriss, name: s.name, gelaende: s.gelaende ?? 'gras', meterProEinheit: meterProEinheit(s), viertel: zellen, grenzen, strassen, haeuser: [], orte: [], baeume: [], plaetze: [], parks: [], hafen: null, platz };
+  const einwohner = s.einwohner ?? 15000;
+  plan.hafen = erzeugeHafen(createRng(`${seed}#hafen`), plan, einwohner);
+  const ausstattung = erzeugePlaetzeUndParks(createRng(`${seed}#plaetze`), plan, einwohner);
+  plan.plaetze = ausstattung.plaetze;
+  plan.parks = ausstattung.parks;
+  // Gassen enden am Wasser und laufen nicht durch Parks und Plätze
+  plan.grenzen = grenzenOhne(plan.grenzen, [...(plan.meer ? [plan.meer] : []), ...(plan.fluss ? [plan.fluss.flaeche] : []), ...plan.parks.map(p => p.ecken), ...plan.plaetze.map(p => p.ecken)]);
   plan.haeuser = erzeugeHaeuser(createRng(`${seed}#haeuser`), plan);
   const gesetzt = setzeOrte(createRng(`${seed}#orte`), s.orte ?? [], zellen, plan.haeuser, plan.mauer);
   plan.haeuser = gesetzt.haeuser;

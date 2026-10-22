@@ -40,6 +40,12 @@ export function legeBeschriftung(plan: Stadtplan): Beschriftung[] {
   const belegt: Rechteck[] = [];
   // Titel, Maßstab, Kompass, Rahmen und Gebäude der Orte sind Hindernisse.
   belegt.push({ x0: WIDTH / 2 - 210, y0: 0, x1: WIDTH / 2 + 210, y1: 110 }, { x0: 0, y0: HEIGHT - 120, x1: 330, y1: HEIGHT }, { x0: WIDTH - 170, y0: HEIGHT - 170, x1: WIDTH, y1: HEIGHT });
+  for (const st of plan.hafen?.stege ?? []) {
+    const xs = st.ecken.map(e => e.x);
+    const ys = st.ecken.map(e => e.y);
+    belegt.push({ x0: Math.min(...xs) - 4, y0: Math.min(...ys) - 4, x1: Math.max(...xs) + 4, y1: Math.max(...ys) + 4 });
+  }
+  for (const sc of plan.hafen?.schiffe ?? []) belegt.push({ x0: sc.mitte.x - sc.laenge / 2, y0: sc.mitte.y - sc.laenge / 2, x1: sc.mitte.x + sc.laenge / 2, y1: sc.mitte.y + sc.laenge / 2 });
   for (const o of plan.orte) belegt.push({ x0: o.mitte.x - 11, y0: o.mitte.y - 9, x1: o.mitte.x + 11, y1: o.mitte.y + 9 });
   const out: Beschriftung[] = [];
 
@@ -52,6 +58,9 @@ export function legeBeschriftung(plan: Stadtplan): Beschriftung[] {
       const mitte = { x: (r.x0 + r.x1) / 2, y: (r.y0 + r.y1) / 2 };
       if (belegt.some(b => schneidet(r, b))) continue;
       if (imStadtgebiet && !inPolygon(mitte, plan.innen)) continue;
+      // Keine Namen auf dem Wasser (Mitte und Ecken prüfen)
+      const wasser = [plan.meer, plan.fluss?.flaeche ?? null];
+      if (art === 'viertel' && [mitte, { x: r.x0, y: r.y0 }, { x: r.x1, y: r.y0 }, { x: r.x0, y: r.y1 }, { x: r.x1, y: r.y1 }].some(q => wasser.some(w => w && inPolygon(q, w)))) continue;
       wahl = { x, y, anker, r };
       break;
     }

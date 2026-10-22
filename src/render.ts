@@ -22,13 +22,19 @@ const FARBE = {
   strasse: '#8a6a3c',
   baum: '#6f7f4c',
   baumRand: '#3c4a2a',
+  park: '#b9c68a',
+  parkRand: '#566b36',
+  platz: '#dfd2b0',
+  holz: '#97724a',
+  rumpf: '#6d4f33',
+  segel: '#f2e9d0',
 };
 
 /** Abweichende Farben je Gelände (Rest wie `FARBE`). */
 const PALETTE: Record<Stadtplan['gelaende'], Partial<typeof FARBE>> = {
   gras: {},
-  wueste: { pergament: '#f0d79c', rand: '#cfac66', dach1: '#d2a468', dach2: '#c4935a', dach3: '#dcb77c', gasse: '#c9a867', strasse: '#a58048', wasser: '#a8c8bc', baum: '#8a8a4c', baumRand: '#4f4f2a' },
-  eis: { pergament: '#e4ebed', rand: '#b9c8d0', dach1: '#d6dee3', dach2: '#c5d0d8', dach3: '#e8eef1', hausRand: '#4c6272', stein: '#c0cdd4', gasse: '#9fb1bd', strasse: '#6f8493', bruecke: '#c8d6de', wasser: '#b3cfdc', wasserRand: '#4b7488', tinte: '#2f3d48', text: '#2f3d48', baum: '#9db3b0', baumRand: '#4c6a6a' },
+  wueste: { pergament: '#f0d79c', rand: '#cfac66', dach1: '#d2a468', dach2: '#c4935a', dach3: '#dcb77c', gasse: '#c9a867', strasse: '#a58048', wasser: '#a8c8bc', baum: '#8a8a4c', baumRand: '#4f4f2a', park: '#c3c88a', platz: '#e6d3a2' },
+  eis: { pergament: '#e4ebed', rand: '#b9c8d0', dach1: '#d6dee3', dach2: '#c5d0d8', dach3: '#e8eef1', hausRand: '#4c6272', stein: '#c0cdd4', gasse: '#9fb1bd', strasse: '#6f8493', bruecke: '#c8d6de', wasser: '#b3cfdc', wasserRand: '#4b7488', tinte: '#2f3d48', text: '#2f3d48', baum: '#9db3b0', baumRand: '#4c6a6a', park: '#d3dedc', parkRand: '#6a8484', platz: '#dfe7ea' },
   gebirge: { pergament: '#e5d8b8', rand: '#c3b08a', dach1: '#a98870', dach2: '#98785f', dach3: '#b99a80', hausRand: '#4a382c', gasse: '#a8967a', strasse: '#6b5a48', baum: '#697a4a', baumRand: '#3a4a2a' },
 };
 
@@ -74,6 +80,18 @@ function baum(p: Point, art: Stadtplan['gelaende'], F: Palette): string {
     return `<path d="M${f(p.x)} ${f(p.y - 9)}L${f(p.x + 5)} ${f(p.y + 3)}L${f(p.x - 5)} ${f(p.y + 3)}Z" fill="${F.baum}" stroke="${F.baumRand}" stroke-width=".8"/>`;
   }
   return `<circle cx="${f(p.x)}" cy="${f(p.y)}" r="5.5" fill="${F.baum}" stroke="${F.baumRand}" stroke-width=".9"/>`;
+}
+
+function schiff(s: { mitte: Point; winkel: number; laenge: number; breite: number }, F: Palette): string {
+  const l = s.laenge / 2;
+  const w = s.breite / 2;
+  const grad = (s.winkel * 180) / Math.PI;
+  return `<g transform="translate(${f(s.mitte.x)} ${f(s.mitte.y)}) rotate(${f(grad)})">
+<path d="M${f(-l)} ${f(-w)}L${f(l * 0.55)} ${f(-w)}L${f(l)} 0L${f(l * 0.55)} ${f(w)}L${f(-l)} ${f(w)}Z" transform="translate(1.6 1.6)" fill="#3a2410" opacity=".3"/>
+<path d="M${f(-l)} ${f(-w)}L${f(l * 0.55)} ${f(-w)}L${f(l)} 0L${f(l * 0.55)} ${f(w)}L${f(-l)} ${f(w)}Z" fill="${F.rumpf}" stroke="${F.tinte}" stroke-width="1.2" stroke-linejoin="round"/>
+<path d="M${f(-l * 0.1)} ${f(-w * 0.9)}L${f(-l * 0.1)} ${f(w * 0.9)}L${f(l * 0.45)} 0Z" fill="${F.segel}" stroke="${F.tinte}" stroke-width="1"/>
+<line x1="${f(-l * 0.1)}" y1="${f(-w * 0.9)}" x2="${f(-l * 0.1)}" y2="${f(w * 0.9)}" stroke="${F.tinte}" stroke-width="1.2"/>
+</g>`;
 }
 
 function kompass(F: Palette): string {
@@ -147,8 +165,29 @@ export function rendereSvg(u: Stadtplan, name = u.name): string {
     t.push(`<path d="${pfad(u.fluss.mittellinie, false)}" fill="none" stroke="${F.wasserRand}" stroke-width="1" opacity=".45" stroke-dasharray="14 10" stroke-linecap="round"/>`);
   }
 
+  // Hafen: Stege und Schiffe im Wasser
+  if (u.hafen) {
+    for (const st of u.hafen.stege) t.push(`<path d="${polygone([st.ecken], 1.5, 1.5)}" fill="#3a2410" opacity=".3"/><path d="${polygone([st.ecken])}" fill="${F.holz}" stroke="${F.tinte}" stroke-width="1.3"/>`);
+    for (const sc of u.hafen.schiffe) t.push(schiff(sc, F));
+  }
+
   // Bäume außerhalb
   for (const p of u.baeume) t.push(baum(p, u.gelaende, F));
+
+  // Kai, Plätze und Parks
+  if (u.hafen) {
+    t.push(`<path d="${pfad(u.hafen.kai, false)}" fill="none" stroke="${F.tinte}" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>`);
+    t.push(`<path d="${pfad(u.hafen.kai, false)}" fill="none" stroke="${F.stein}" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>`);
+  }
+  for (const pl of u.plaetze) {
+    t.push(`<path d="${pfad(pl.ecken, true)}" fill="${F.platz}" stroke="${F.tinte}" stroke-width="1.4" stroke-linejoin="round"/>`);
+    if (pl.art === 'haupt') t.push(`<circle cx="${f(pl.mitte.x)}" cy="${f(pl.mitte.y)}" r="4.5" fill="${F.stein}" stroke="${F.tinte}" stroke-width="1.4"/>`);
+  }
+  for (const pk of u.parks) {
+    t.push(`<path d="${pfad(pk.ecken, true)}" fill="${F.park}" stroke="${F.parkRand}" stroke-width="1.6" stroke-linejoin="round"/>`);
+    if (pk.teich) t.push(`<path d="${pfad(pk.teich, true)}" fill="${F.wasser}" stroke="${F.wasserRand}" stroke-width="1.2"/>`);
+    for (const b of pk.baeume) t.push(baum(b, u.gelaende, F));
+  }
 
   // Gassen, Häuser mit Schatten, Orte
   t.push(`<path d="${u.grenzen.map(([a, b]) => `M${f(a.x)} ${f(a.y)}L${f(b.x)} ${f(b.y)}`).join('')}" stroke="${F.gasse}" stroke-width="3" stroke-linecap="round" fill="none"/>`);

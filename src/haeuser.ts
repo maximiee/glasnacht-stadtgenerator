@@ -1,4 +1,5 @@
 import { WIDTH, HEIGHT, dist, distZuLinie, distZuStrecke, inPolygon, type Point } from './geometry';
+import { kuestenlinie } from './ausstattung';
 import type { Rng } from './rng';
 import type { Stadtplan } from './stadtplan';
 
@@ -26,6 +27,7 @@ function rechteck(m: Point, breite: number, tiefe: number, winkel: number): Poin
  */
 export function erzeugeHaeuser(rng: Rng, plan: Stadtplan): Haus[] {
   const winkel = plan.viertel.map(() => rng() * Math.PI);
+  const ufer = plan.meer ? kuestenlinie(plan.meer) : null;
   const haeuser: Haus[] = [];
   const belegt = new Map<string, Point[]>();
   const schluessel = (x: number, y: number) => `${Math.floor(x / 14)},${Math.floor(y / 14)}`;
@@ -43,8 +45,11 @@ export function erzeugeHaeuser(rng: Rng, plan: Stadtplan): Haus[] {
       const p = { x: gx + (rng() - 0.5) * RASTER * 0.7, y: gy + (rng() - 0.5) * RASTER * 0.7 };
       const abstandMitte = dist(p, plan.platz);
       if (abstandMitte < PLATZ_RADIUS) continue;
-      if (plan.meer && inPolygon(p, plan.meer)) continue;
-      if (plan.fluss && (inPolygon(p, plan.fluss.flaeche) || distZuLinie(p, plan.fluss.flaeche, true) < 7)) continue;
+      if (plan.meer && (inPolygon(p, plan.meer) || distZuLinie(p, ufer!) < 14)) continue;
+      if (plan.hafen && distZuLinie(p, plan.hafen.kai) < 16) continue;
+      if (plan.plaetze.some(q => dist(p, q.mitte) < q.radius + 9)) continue;
+      if (plan.parks.some(q => dist(p, q.mitte) < q.radius * 1.15 + 8)) continue;
+      if (plan.fluss && (inPolygon(p, plan.fluss.flaeche) || distZuLinie(p, plan.fluss.flaeche, true) < 10)) continue;
 
       const innen = inPolygon(p, plan.innen);
       let dichte: number;
