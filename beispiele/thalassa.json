@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "name": "Thalassa",
+  "seed": "thalassa-1",
+  "radius": 300,
+  "wasser": "kueste",
+  "mauer": true,
+  "viertel": [
+    { "name": "Die Alte Stadt" },
+    { "name": "Der Neue Hafen" },
+    { "name": "Marktkai" },
+    { "name": "Viertel der Fischer" },
+    { "name": "Tempelhang" }
+  ],
+  "orte": [
+    { "name": "Säulenhalle der alten Zeit", "art": "ruine", "viertel": "Die Alte Stadt" },
+    { "name": "Leuchtturm", "art": "turm", "viertel": "Der Neue Hafen" }
+  ]
+}

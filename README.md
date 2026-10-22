@@ -7,6 +7,15 @@ Sideprojekt zu [Glasnacht](https://github.com/maximiee/glasnacht): erzeugt Stadt
 - Fluss, Küste, Mauer, Viertel mit festen Namen und Orte (POI) aus den Glasnacht-Städtedaten.
 - Ausgabe als SVG, im Browser und per Kommandozeile.
 
+## Eingabe: eine JSON pro Stadt
+Glasnacht erzeugt pro Stadt eine JSON-Datei, der Generator lädt sie und zeichnet danach (statt Reglern wie bei Watabou). Format siehe `src/stadt.ts`, Beispiel `beispiele/thalassa.json`.
+
+```
+npm run svg -- beispiele/thalassa.json out/thalassa.svg
+```
+
+Pflicht sind `version` (1) und `name`. Optional: `seed`, `radius`, `wasser` (`fluss`, `kueste`, `keins`), `mauer`, `viertel`, `orte`. Viertel und Orte werden schon eingelesen, aber noch nicht gezeichnet.
+
 ## Technik
 TypeScript, Vite, Vitest. Eigener Algorithmus, **kein** Code aus TownGeneratorOS (GPLv3) übernommen.
 
@@ -16,4 +25,4 @@ TypeScript, Vite, Vitest. Eigener Algorithmus, **kein** Code aus TownGeneratorOS
 - `npm run check` (Typprüfung und Tests)
 
 ## Stand
-Gerüst mit seedbarem Zufallsgenerator. Nächste Schritte: Viertel (Voronoi), Straßen, Gebäude, Fluss, Mauer, SVG-Renderer.
+Umriss (Mauer, Fluss, Küste) und SVG-Renderer im Stil der Vorlage, Laden der Stadt-JSON. Nächste Schritte: Viertel (Voronoi), Straßen, Gebäude, Orte, Namensschilder.
