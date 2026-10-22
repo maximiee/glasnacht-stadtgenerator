@@ -30,3 +30,11 @@ describe('Stadtplan', () => {
     expect(p.grenzen.length).toBeGreaterThan(0);
   });
 });
+
+describe('Orte', () => {
+  it('setzt Orte in ihr Viertel', async () => {
+    const { erzeugeStadtplan } = await import('./stadtplan');
+    const p = erzeugeStadtplan(liesStadt({ version: 1, name: 'T', viertel: [{ name: 'A' }, { name: 'B' }, { name: 'C' }, { name: 'D' }], orte: [{ name: 'Leuchtturm', viertel: 'B' }, { name: 'Dom', viertel: 'C' }] }));
+    expect(p.orte.map(o => o.name)).toEqual(['Leuchtturm', 'Dom']);
+  });
+});

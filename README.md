@@ -14,7 +14,7 @@ Glasnacht erzeugt pro Stadt eine JSON-Datei, der Generator lädt sie und zeichne
 npm run svg -- beispiele/thalassa.json out/thalassa.svg
 ```
 
-Pflicht sind `version` (1) und `name`. Optional: `seed`, `radius`, `wasser` (`fluss`, `kueste`, `keins`), `mauer`, `viertel`, `orte`. Viertel (Grenzen und Namen), Tore und Straßen werden gezeichnet; Häuser (Raster je Viertel ausgerichtet, außen locker an den Straßen); Orte werden eingelesen, aber noch nicht gezeichnet.
+Pflicht sind `version` (1) und `name`. Optional: `seed`, `radius`, `wasser` (`fluss`, `kueste`, `keins`), `mauer`, `viertel`, `orte`. Viertel (Grenzen und Namen), Tore und Straßen werden gezeichnet; Häuser (Raster je Viertel ausgerichtet, außen locker an den Straßen) und Orte als dunkle Gebäude mit Namen.
 
 ## Technik
 TypeScript, Vite, Vitest. Eigener Algorithmus, **kein** Code aus TownGeneratorOS (GPLv3) übernommen.
@@ -25,4 +25,4 @@ TypeScript, Vite, Vitest. Eigener Algorithmus, **kein** Code aus TownGeneratorOS
 - `npm run check` (Typprüfung und Tests)
 
 ## Stand
-Umriss (Mauer, Fluss, Küste) und SVG-Renderer im Stil der Vorlage, Laden der Stadt-JSON. Viertel (Voronoi), Tore und Straßen. Nächste Schritte: Orte als markierte Gebäude, Brücken, Feinschliff der Beschriftung.
+Umriss (Mauer, Fluss, Küste) und SVG-Renderer im Stil der Vorlage, Laden der Stadt-JSON. Viertel (Voronoi), Tore und Straßen. Nächste Schritte: Brücken, Feinschliff der Beschriftung.
