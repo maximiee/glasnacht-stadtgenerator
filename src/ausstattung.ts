@@ -1,4 +1,4 @@
-import { dist, distZuLinie, inPolygon, offsetLine, streckeInPolygon, type Point } from './geometry';
+import { HEIGHT, WIDTH, dist, distZuLinie, inPolygon, offsetLine, streckeInPolygon, type Point } from './geometry';
 import type { Rng } from './rng';
 import type { Stadtplan } from './stadtplan';
 
@@ -15,6 +15,14 @@ export interface Park {
   ecken: Point[];
   baeume: Point[];
   teich: Point[] | null;
+  /** Wüste: Palmen und größerer Teich. */
+  oase: boolean;
+}
+
+export interface Feld {
+  ecken: Point[];
+  /** Farbvariante 0 bis 2, damit die Flur nicht einheitlich wirkt. */
+  ton: number;
 }
 
 export interface Steg {
@@ -141,8 +149,9 @@ export function erzeugePlaetzeUndParks(rng: Rng, plan: Stadtplan, einwohner: num
       const p = { x: f.mitte.x + Math.cos(w) * r, y: f.mitte.y + Math.sin(w) * r };
       if (baeume.every(b => dist(b, p) > 8)) baeume.push(p);
     }
-    const teich = rng() < 0.5 ? blob(rng, { x: f.mitte.x + (rng() - 0.5) * f.radius * 0.3, y: f.mitte.y + (rng() - 0.5) * f.radius * 0.3 }, f.radius * 0.28, 10, 0.2) : null;
-    parks.push({ ...f, ecken, baeume: teich ? baeume.filter(b => !inPolygon(b, teich) && distZuLinie(b, teich, true) > 5) : baeume, teich });
+    const oase = plan.gelaende === 'wueste';
+    const teich = oase || rng() < 0.5 ? blob(rng, { x: f.mitte.x + (rng() - 0.5) * f.radius * 0.3, y: f.mitte.y + (rng() - 0.5) * f.radius * 0.3 }, f.radius * (oase ? 0.45 : 0.28), 10, 0.2) : null;
+    parks.push({ ...f, ecken, baeume: teich ? baeume.filter(b => !inPolygon(b, teich) && distZuLinie(b, teich, true) > 5) : baeume, teich, oase });
     belegt.push(f);
   }
   return { plaetze, parks };
@@ -207,3 +216,46 @@ export function grenzenOhne(grenzen: [Point, Point][], sperr: Point[][]): [Point
   for (const poly of sperr) teile = teile.flatMap(([a, b]) => streckeInPolygon(a, b, poly, false));
   return teile;
 }
+
+/**
+ * Felder rund um die Stadt: Gruppen rechteckiger Parzellen, je Gruppe gleich ausgerichtet.
+ * Sie liegen außerhalb der Mauer, abseits von Wasser, Straßen und Häusern. In Wüste und Eis gibt es keine.
+ */
+export function erzeugeFelder(rng: Rng, plan: Stadtplan, radius: number): Feld[] {
+  if (plan.gelaende === 'wueste' || plan.gelaende === 'eis') return [];
+  const felder: Feld[] = [];
+  const mitten = plan.haeuser.map(h => ({ x: (h.ecken[0]!.x + h.ecken[2]!.x) / 2, y: (h.ecken[0]!.y + h.ecken[2]!.y) / 2 }));
+  const gruppen = plan.gelaende === 'gebirge' ? 2 : 4 + Math.floor(rng() * 3);
+
+  const brauchbar = (p: Point) =>
+    p.x > 36 && p.y > 36 && p.x < WIDTH - 36 && p.y < HEIGHT - 36 &&
+    !inPolygon(p, plan.innen) && distZuLinie(p, plan.innen, true) > 40 &&
+    !(plan.meer && (inPolygon(p, plan.meer) || distZuLinie(p, kuestenlinie(plan.meer)) < 16)) &&
+    !(plan.fluss && (inPolygon(p, plan.fluss.flaeche) || distZuLinie(p, plan.fluss.flaeche, true) < 14)) &&
+    plan.strassen.every(l => distZuLinie(p, l) > 12) &&
+    mitten.every(h => dist(h, p) > 18) &&
+    (plan.mauer ?? []).every(m => distZuLinie(p, m.punkte, m.geschlossen) > 24);
+
+  for (let g = 0; g < gruppen; g++) {
+    const w = rng() * Math.PI * 2;
+    const abstand = radius * (1.3 + rng() * 0.7);
+    const mitte = { x: plan.mitte.x + Math.cos(w) * abstand, y: plan.mitte.y + Math.sin(w) * abstand };
+    const winkel = rng() * Math.PI;
+    const [ux, uy] = [Math.cos(winkel), Math.sin(winkel)];
+    const bw = 40 + rng() * 22;
+    const bt = 26 + rng() * 14;
+    for (let i = -4; i <= 4; i++) {
+      for (let j = -4; j <= 4; j++) {
+        const c = { x: mitte.x + ux * i * bw - uy * j * bt + (rng() - 0.5) * 5, y: mitte.y + uy * i * bw + ux * j * bt + (rng() - 0.5) * 5 };
+        if (dist(c, mitte) > 150 || rng() < 0.15) continue;
+        const ecken = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([x, y]) => ({ x: c.x + x! * (bw / 2 - 3) * ux - y! * (bt / 2 - 3) * uy, y: c.y + x! * (bw / 2 - 3) * uy + y! * (bt / 2 - 3) * ux }));
+        if (![c, ...ecken].every(brauchbar)) continue;
+        if (felder.some(f2 => dist(mittelpunkt4(f2.ecken), c) < Math.min(bw, bt) * 0.9)) continue;
+        felder.push({ ecken, ton: Math.floor(rng() * 3) });
+      }
+    }
+  }
+  return felder;
+}
+
+const mittelpunkt4 = (e: Point[]): Point => ({ x: (e[0]!.x + e[2]!.x) / 2, y: (e[0]!.y + e[2]!.y) / 2 });

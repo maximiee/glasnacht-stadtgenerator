@@ -28,6 +28,10 @@ const FARBE = {
   holz: '#97724a',
   rumpf: '#6d4f33',
   segel: '#f2e9d0',
+  feld1: '#cbcf92',
+  feld2: '#d6c98a',
+  feld3: '#bcc684',
+  feldRand: '#7d7a47',
 };
 
 /** Abweichende Farben je Gelände (Rest wie `FARBE`). */
@@ -76,6 +80,13 @@ function wasserlinien(linie: Point[], wasser: Point[], F: Palette): string {
 }
 
 function baum(p: Point, art: Stadtplan['gelaende'], F: Palette): string {
+  if (art === 'wueste') {
+    const strahlen = Array.from({ length: 6 }, (_, i) => {
+      const w = (i / 6) * Math.PI * 2;
+      return `M${f(p.x)} ${f(p.y)}L${f(p.x + Math.cos(w) * 7)} ${f(p.y + Math.sin(w) * 7)}`;
+    }).join('');
+    return `<path d="${strahlen}" stroke="${F.baumRand}" stroke-width="1.8" stroke-linecap="round" fill="none"/><circle cx="${f(p.x)}" cy="${f(p.y)}" r="2.2" fill="${F.baum}" stroke="${F.baumRand}" stroke-width=".8"/>`;
+  }
   if (art === 'eis' || art === 'gebirge') {
     return `<path d="M${f(p.x)} ${f(p.y - 9)}L${f(p.x + 5)} ${f(p.y + 3)}L${f(p.x - 5)} ${f(p.y + 3)}Z" fill="${F.baum}" stroke="${F.baumRand}" stroke-width=".8"/>`;
   }
@@ -171,6 +182,13 @@ export function rendereSvg(u: Stadtplan, name = u.name): string {
     for (const sc of u.hafen.schiffe) t.push(schiff(sc, F));
   }
 
+  // Felder
+  const feldFarben = [F.feld1, F.feld2, F.feld3];
+  for (const k of [0, 1, 2]) {
+    const liste = u.felder.filter(fe => fe.ton === k);
+    if (liste.length) t.push(`<path d="${polygone(liste.map(fe => fe.ecken))}" fill="${feldFarben[k]}" stroke="${F.feldRand}" stroke-width="1" stroke-linejoin="round" opacity=".92"/>`);
+  }
+
   // Bäume außerhalb
   for (const p of u.baeume) t.push(baum(p, u.gelaende, F));
 
@@ -196,8 +214,16 @@ export function rendereSvg(u: Stadtplan, name = u.name): string {
   dachfarben.forEach((farbe, k) => {
     t.push(`<path d="${polygone(u.haeuser.filter((_, i) => i % 3 === k).map(h => h.ecken))}" fill="${farbe}" stroke="${F.hausRand}" stroke-width=".8" stroke-linejoin="round"/>`);
   });
-  t.push(`<path d="${polygone(u.orte.map(o => o.ecken), 2.4, 2.4)}" fill="#3a2410" opacity=".3"/>`);
-  t.push(`<path d="${polygone(u.orte.map(o => o.ecken))}" fill="${F.stein}" stroke="${F.tinte}" stroke-width="1.6" stroke-linejoin="round"/>`);
+  const gebaeude = u.orte.filter(o => o.art === 'haus');
+  t.push(`<path d="${polygone(gebaeude.map(o => o.ecken), 2.4, 2.4)}" fill="#3a2410" opacity=".3"/>`);
+  t.push(`<path d="${polygone(gebaeude.map(o => o.ecken))}" fill="${F.stein}" stroke="${F.tinte}" stroke-width="1.6" stroke-linejoin="round"/>`);
+  for (const o of u.orte.filter(x => x.art === 'burg')) {
+    t.push(`<path d="${polygone([o.ecken], 3, 3)}" fill="#3a2410" opacity=".3"/>`);
+    t.push(`<path d="${polygone([o.ecken])}" fill="${F.platz}" stroke="${F.tinte}" stroke-width="5" stroke-linejoin="round"/>`);
+    t.push(`<path d="${polygone([o.ecken])}" fill="none" stroke="${F.stein}" stroke-width="2.6" stroke-linejoin="round"/>`);
+    t.push(`<path d="${polygone([o.burg!.bergfried])}" fill="#6a5d4c" stroke="${F.tinte}" stroke-width="1.6" stroke-linejoin="round"/>`);
+    for (const e of o.burg!.tuerme) t.push(`<circle cx="${f(e.x)}" cy="${f(e.y)}" r="6.5" fill="${F.turm}" stroke="${F.tinte}" stroke-width="1.6"/>`);
+  }
 
   // Straßen mit Brücken
   if (u.fluss) {

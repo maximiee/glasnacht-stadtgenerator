@@ -25,4 +25,4 @@ TypeScript, Vite, Vitest. Eigener Algorithmus, **kein** Code aus TownGeneratorOS
 - `npm run check` (Typprüfung und Tests)
 
 ## Stand
-Umriss (Mauer, Fluss, Küste) und SVG-Renderer im Stil der Vorlage, Laden der Stadt-JSON. Viertel (Voronoi), Tore und Straßen. Nächste Schritte: Brücken, Feinschliff der Beschriftung.
+Umriss (Mauer, Fluss, Küste), Viertel, Tore, Straßen, Brücken, Häuser, Orte, Plätze, Parks (in der Wüste Oasen), Hafen, Felder und Zitadellen sind im Stil der Vorlage umgesetzt. Größe und Maßstab folgen der Einwohnerzahl. Offen: Feinschliff der Beschriftung (Namen teils über Parks oder Mauern), kurze Kais an breiten Küsten.

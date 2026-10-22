@@ -4,7 +4,7 @@ import { createRng, type Rng } from './rng';
 import { meterProEinheit, radiusFuer, type Gelaende, type StadtDatei } from './stadt';
 import { erzeugeHaeuser, type Haus } from './haeuser';
 import { setzeOrte, type OrtMarke } from './orte';
-import { erzeugeHafen, erzeugePlaetzeUndParks, grenzenOhne, kuestenlinie, type Hafen, type Park, type Platz } from './ausstattung';
+import { erzeugeFelder, erzeugeHafen, erzeugePlaetzeUndParks, grenzenOhne, kuestenlinie, type Feld, type Hafen, type Park, type Platz } from './ausstattung';
 import { erzeugeViertel, type ViertelZelle } from './viertel';
 
 export interface Stadtplan extends Umriss {
@@ -25,6 +25,7 @@ export interface Stadtplan extends Umriss {
   baeume: Point[];
   plaetze: Platz[];
   parks: Park[];
+  felder: Feld[];
   /** Nur an der Küste. */
   hafen: Hafen | null;
 }
@@ -90,6 +91,7 @@ function streueBaeume(rng: Rng, plan: Stadtplan): Point[] {
       if (plan.fluss && (inPolygon(p, plan.fluss.flaeche) || distZuLinie(p, plan.fluss.flaeche, true) < 14)) continue;
       if (plan.strassen.some(l => distZuLinie(p, l) < 14)) continue;
       if (haeuserMitte.some(h => dist(h, p) < 16)) continue;
+      if (plan.felder.some(fe => dist({ x: (fe.ecken[0]!.x + fe.ecken[2]!.x) / 2, y: (fe.ecken[0]!.y + fe.ecken[2]!.y) / 2 }, p) < 34)) continue;
       if (baeume.some(b => dist(b, p) < 9)) continue;
       baeume.push(p);
     }
@@ -154,7 +156,7 @@ export function erzeugeStadtplan(s: StadtDatei): Stadtplan {
       break;
     }
   }
-  const plan: Stadtplan = { ...umriss, name: s.name, gelaende: s.gelaende ?? 'gras', meterProEinheit: meterProEinheit(s), viertel: zellen, grenzen, strassen, haeuser: [], orte: [], baeume: [], plaetze: [], parks: [], hafen: null, platz };
+  const plan: Stadtplan = { ...umriss, name: s.name, gelaende: s.gelaende ?? 'gras', meterProEinheit: meterProEinheit(s), viertel: zellen, grenzen, strassen, haeuser: [], orte: [], baeume: [], plaetze: [], parks: [], felder: [], hafen: null, platz };
   const einwohner = s.einwohner ?? 15000;
   plan.hafen = erzeugeHafen(createRng(`${seed}#hafen`), plan, einwohner);
   const ausstattung = erzeugePlaetzeUndParks(createRng(`${seed}#plaetze`), plan, einwohner);
@@ -163,9 +165,10 @@ export function erzeugeStadtplan(s: StadtDatei): Stadtplan {
   // Gassen enden am Wasser und laufen nicht durch Parks und Plätze
   plan.grenzen = grenzenOhne(plan.grenzen, [...(plan.meer ? [plan.meer] : []), ...(plan.fluss ? [plan.fluss.flaeche] : []), ...plan.parks.map(p => p.ecken), ...plan.plaetze.map(p => p.ecken)]);
   plan.haeuser = erzeugeHaeuser(createRng(`${seed}#haeuser`), plan);
-  const gesetzt = setzeOrte(createRng(`${seed}#orte`), s.orte ?? [], zellen, plan.haeuser, plan.mauer);
+  const gesetzt = setzeOrte(createRng(`${seed}#orte`), s.orte ?? [], zellen, plan.haeuser, plan);
   plan.haeuser = gesetzt.haeuser;
   plan.orte = gesetzt.marken;
+  plan.felder = erzeugeFelder(createRng(`${seed}#felder`), plan, radiusFuer(s));
   plan.baeume = streueBaeume(createRng(`${seed}#baeume`), plan);
   return plan;
 }

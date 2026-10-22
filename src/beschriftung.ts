@@ -46,7 +46,7 @@ export function legeBeschriftung(plan: Stadtplan): Beschriftung[] {
     belegt.push({ x0: Math.min(...xs) - 4, y0: Math.min(...ys) - 4, x1: Math.max(...xs) + 4, y1: Math.max(...ys) + 4 });
   }
   for (const sc of plan.hafen?.schiffe ?? []) belegt.push({ x0: sc.mitte.x - sc.laenge / 2, y0: sc.mitte.y - sc.laenge / 2, x1: sc.mitte.x + sc.laenge / 2, y1: sc.mitte.y + sc.laenge / 2 });
-  for (const o of plan.orte) belegt.push({ x0: o.mitte.x - 11, y0: o.mitte.y - 9, x1: o.mitte.x + 11, y1: o.mitte.y + 9 });
+  for (const o of plan.orte) { const h = o.art === 'burg' ? 32 : 11; belegt.push({ x0: o.mitte.x - h, y0: o.mitte.y - h * 0.8, x1: o.mitte.x + h, y1: o.mitte.y + h * 0.8 }); }
   const out: Beschriftung[] = [];
 
   const versuche = (basis: Point, kandidaten: [number, number, Beschriftung['anker']][], zeilen: string[], art: Beschriftung['art'], imStadtgebiet: boolean) => {
@@ -77,7 +77,8 @@ export function legeBeschriftung(plan: Stadtplan): Beschriftung[] {
 
   for (const o of plan.orte) {
     const z = umbrechen(o.name, 24);
-    versuche(o.mitte, [[14, 4, 'start'], [-14, 4, 'end'], [0, -14, 'middle'], [0, 26, 'middle'], [14, -12, 'start'], [-14, -12, 'end'], [14, 20, 'start'], [-14, 20, 'end']], z, 'ort', false);
+    const d = o.art === 'burg' ? 34 : 14;
+    versuche(o.mitte, [[d, 4, 'start'], [-d, 4, 'end'], [0, -d, 'middle'], [0, d + 12, 'middle'], [d, -12, 'start'], [-d, -12, 'end'], [d, 20, 'start'], [-d, 20, 'end']], z, 'ort', false);
   }
   return out;
 }
