@@ -1,4 +1,4 @@
-import { WIDTH, HEIGHT, dist, distZuLinie, inPolygon, type Point } from './geometry';
+import { WIDTH, HEIGHT, dist, distZuLinie, distZuStrecke, inPolygon, type Point } from './geometry';
 import type { Rng } from './rng';
 import type { Stadtplan } from './stadtplan';
 
@@ -41,15 +41,16 @@ export function erzeugeHaeuser(rng: Rng, plan: Stadtplan): Haus[] {
   for (let gx = RASTER; gx < WIDTH; gx += RASTER) {
     for (let gy = RASTER; gy < HEIGHT; gy += RASTER) {
       const p = { x: gx + (rng() - 0.5) * RASTER * 0.7, y: gy + (rng() - 0.5) * RASTER * 0.7 };
-      const abstandMitte = dist(p, plan.mitte);
+      const abstandMitte = dist(p, plan.platz);
       if (abstandMitte < PLATZ_RADIUS) continue;
       if (plan.meer && inPolygon(p, plan.meer)) continue;
-      if (plan.fluss && (inPolygon(p, plan.fluss.flaeche) || distZuLinie(p, plan.fluss.mittellinie) < 40)) continue;
+      if (plan.fluss && (inPolygon(p, plan.fluss.flaeche) || distZuLinie(p, plan.fluss.flaeche, true) < 7)) continue;
 
       const innen = inPolygon(p, plan.innen);
       let dichte: number;
       const strasse = Math.min(...plan.strassen.map(l => distZuLinie(p, l)), Infinity);
       if (strasse < 9) continue;
+      if (plan.grenzen.some(([a, b]) => distZuStrecke(p, a, b) < 6)) continue;
       if (innen) {
         dichte = 0.92;
       } else {

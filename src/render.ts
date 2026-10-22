@@ -1,4 +1,5 @@
-import { HEIGHT, WIDTH, type Point } from './geometry';
+import { HEIGHT, WIDTH, inPolygon, type Point } from './geometry';
+import { legeBeschriftung } from './beschriftung';
 import type { Stadtplan } from './stadtplan';
 
 // Farben nach docs/Stilvorlage.md
@@ -12,7 +13,8 @@ const FARBE = {
   text: '#2e3430',
   haus: '#c98a5a',
   hausRand: '#7a4f33',
-  grenze: '#9c8444',
+  bruecke: '#d8c586',
+  gasse: '#b99a5e',
   strasse: '#7a5f32',
 };
 
@@ -42,9 +44,13 @@ export function rendereSvg(u: Stadtplan, name = u.name): string {
   if (u.meer) teile.push(`<path d="${pfad(u.meer, true)}" fill="${FARBE.wasser}" stroke="${FARBE.wasserRand}" stroke-width="2"/>`);
   if (u.fluss) teile.push(`<path d="${pfad(u.fluss.flaeche, true)}" fill="${FARBE.wasser}" stroke="${FARBE.wasserRand}" stroke-width="1.5"/>`);
 
-  teile.push(`<path d="${u.grenzen.map(([a, b]) => `M${a.x.toFixed(1)} ${a.y.toFixed(1)}L${b.x.toFixed(1)} ${b.y.toFixed(1)}`).join('')}" stroke="${FARBE.grenze}" stroke-width="1.5" stroke-dasharray="6 5" fill="none"/>`);
+  teile.push(`<path d="${u.grenzen.map(([a, b]) => `M${a.x.toFixed(1)} ${a.y.toFixed(1)}L${b.x.toFixed(1)} ${b.y.toFixed(1)}`).join('')}" stroke="${FARBE.gasse}" stroke-width="3" stroke-linecap="round" fill="none"/>`);
   teile.push(`<path d="${u.haeuser.map(h => 'M' + h.ecken.map(e => `${e.x.toFixed(1)} ${e.y.toFixed(1)}`).join('L') + 'Z').join('')}" fill="${FARBE.haus}" stroke="${FARBE.hausRand}" stroke-width=".7"/>`);
   teile.push(`<path d="${u.orte.map(o => 'M' + o.ecken.map(e => `${e.x.toFixed(1)} ${e.y.toFixed(1)}`).join('L') + 'Z').join('')}" fill="${FARBE.mauer}" stroke="${FARBE.text}" stroke-width="1"/>`);
+  if (u.fluss) {
+    const bruecken = u.strassen.flatMap(l => l.slice(1).map((b, i) => [l[i]!, b] as const).filter(([a, b]) => inPolygon({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, u.fluss!.flaeche)));
+    for (const [a, b] of bruecken) teile.push(`<path d="M${a.x.toFixed(1)} ${a.y.toFixed(1)}L${b.x.toFixed(1)} ${b.y.toFixed(1)}" stroke="${FARBE.bruecke}" stroke-width="12" stroke-linecap="butt"/>`);
+  }
   for (const l of u.strassen) teile.push(`<path d="${pfad(l, false)}" stroke="${FARBE.strasse}" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`);
 
   if (u.mauer) {
@@ -52,11 +58,16 @@ export function rendereSvg(u: Stadtplan, name = u.name): string {
     for (const p of u.mauer) teile.push(`<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="6" fill="${FARBE.mauer}"/>`);
   }
 
-  const schrift = `font-family="Georgia, 'Times New Roman', serif" letter-spacing="3" font-size="19" text-anchor="middle" fill="${FARBE.text}" stroke="${FARBE.pergament}" stroke-width="4" paint-order="stroke" stroke-linejoin="round"`;
-  for (const v of u.viertel) if (v.name) teile.push(`<text x="${v.mitte.x.toFixed(1)}" y="${v.mitte.y.toFixed(1)}" ${schrift}>${v.name.toUpperCase()}</text>`);
-
-  const ortSchrift = `font-family="Georgia, 'Times New Roman', serif" font-size="13" font-style="italic" fill="${FARBE.text}" stroke="${FARBE.pergament}" stroke-width="3.5" paint-order="stroke" stroke-linejoin="round"`;
-  for (const o of u.orte) teile.push(`<text x="${(o.mitte.x + 14).toFixed(1)}" y="${(o.mitte.y + 4).toFixed(1)}" ${ortSchrift}>${o.name}</text>`);
+  const grundSchrift = `font-family="Georgia, 'Times New Roman', serif" fill="${FARBE.text}" stroke="${FARBE.pergament}" paint-order="stroke" stroke-linejoin="round"`;
+  for (const l of legeBeschriftung(u)) {
+    const gross = l.art === 'viertel';
+    const attr = gross
+      ? `${grundSchrift} letter-spacing="3" font-size="19" stroke-width="4"`
+      : `${grundSchrift} font-size="13" font-style="italic" stroke-width="3.5"`;
+    const hoehe = gross ? 22 : 15;
+    const spans = l.zeilen.map((z, i) => `<tspan x="${l.x.toFixed(1)}" dy="${i ? hoehe : 0}">${z}</tspan>`).join('');
+    teile.push(`<text x="${l.x.toFixed(1)}" y="${l.y.toFixed(1)}" text-anchor="${l.anker}" ${attr}>${spans}</text>`);
+  }
 
   teile.push(
     `<g font-family="Georgia, 'Times New Roman', serif">`,
