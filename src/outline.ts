@@ -9,6 +9,11 @@ export interface UmrissOptionen {
   /** Mauerradius in Metern (Maßstab 1 Einheit = 1 m). */
   radius?: number;
   mauer?: boolean;
+  /**
+   * Lage des Wassers. Bei Küste die Himmelsrichtung des Meeres (z. B. `west`, `nordost`),
+   * bei Fluss die Achse (z. B. `nord-sued`, `west-ost`). Ohne Angabe würfelt der Seed.
+   */
+  lage?: string;
   /** Zahl der Tore (Standard 3). */
   tore?: number;
 }
@@ -48,29 +53,48 @@ function wasserlinie(rng: Rng, von: Point, bis: Point, wellen: number, ampl: num
   return smoothLine(pts, 3);
 }
 
-function fluss(rng: Rng): Umriss['fluss'] {
+/** Winkel in Radiant (0 = Osten, y nach unten, also Norden = -90°). */
+const RICHTUNG: Record<string, number> = { ost: 0, suedost: 45, sued: 90, suedwest: 135, west: 180, nordwest: 225, nord: 270, nordost: 315 };
+
+export function richtungswinkel(wort: string | undefined): number | null {
+  const w = wort?.toLowerCase().replace(/[ü]/g, 'ue');
+  return w !== undefined && w in RICHTUNG ? (RICHTUNG[w]! * Math.PI) / 180 : null;
+}
+
+/** Flussachse aus `nord-sued`, `west-ost` usw. Die Achse hat keine Richtung, 0 bis 180°. */
+function achsenwinkel(wort: string | undefined): number | null {
+  const teile = wort?.toLowerCase().replace(/ü/g, 'ue').split('-');
+  const a = richtungswinkel(teile?.[0]);
+  return a === null ? null : a % Math.PI;
+}
+
+function fluss(rng: Rng, lage: string | undefined): Umriss['fluss'] {
   const breite = 50 + rng() * 25;
-  const schraeg = (rng() - 0.5) * 360;
-  const von = { x: -40, y: MITTE.y - 60 + schraeg * 0.5 + (rng() - 0.5) * 120 };
-  const bis = { x: WIDTH + 40, y: MITTE.y - 60 - schraeg * 0.5 + (rng() - 0.5) * 120 };
+  const achse = achsenwinkel(lage) ?? rng() * Math.PI;
+  const dx = Math.cos(achse);
+  const dy = Math.sin(achse);
+  const seitlich = (rng() - 0.5) * 120;
+  const mitte = { x: MITTE.x - dy * seitlich, y: MITTE.y + dx * seitlich };
+  const von = { x: mitte.x - dx * 1000, y: mitte.y - dy * 1000 };
+  const bis = { x: mitte.x + dx * 1000, y: mitte.y + dy * 1000 };
   const mittellinie = wasserlinie(rng, von, bis, 2 + rng() * 1.5, 70 + rng() * 40);
   const links = offsetLine(mittellinie, breite / 2);
   const rechts = offsetLine(mittellinie, -breite / 2).reverse();
   return { mittellinie, flaeche: [...links, ...rechts] };
 }
 
-function meer(rng: Rng): Point[] {
-  // Küste an einer der vier Seiten, Meer dahinter.
-  const seite = Math.floor(rng() * 4);
-  const tief = 260 + rng() * 120;
-  const rand = [
-    { von: { x: -40, y: tief }, bis: { x: WIDTH + 40, y: tief }, ecken: [{ x: WIDTH + 40, y: -40 }, { x: -40, y: -40 }] },
-    { von: { x: WIDTH - tief, y: -40 }, bis: { x: WIDTH - tief, y: HEIGHT + 40 }, ecken: [{ x: WIDTH + 40, y: HEIGHT + 40 }, { x: WIDTH + 40, y: -40 }] },
-    { von: { x: WIDTH + 40, y: HEIGHT - tief }, bis: { x: -40, y: HEIGHT - tief }, ecken: [{ x: -40, y: HEIGHT + 40 }, { x: WIDTH + 40, y: HEIGHT + 40 }] },
-    { von: { x: tief, y: HEIGHT + 40 }, bis: { x: tief, y: -40 }, ecken: [{ x: -40, y: -40 }, { x: -40, y: HEIGHT + 40 }] },
-  ][seite]!;
-  const linie = wasserlinie(rng, rand.von, rand.bis, 3 + rng() * 2, 45 + rng() * 30);
-  return [...linie, ...rand.ecken];
+/** Meer in der gegebenen Himmelsrichtung, die Küste läuft quer dazu am Stadtrand entlang. */
+function meer(rng: Rng, lage: string | undefined, radius: number): Point[] {
+  const winkel = richtungswinkel(lage) ?? Math.floor(rng() * 4) * (Math.PI / 2);
+  const dx = Math.cos(winkel);
+  const dy = Math.sin(winkel);
+  const abstand = radius + 40 + rng() * 70;
+  const fuss = { x: MITTE.x + dx * abstand, y: MITTE.y + dy * abstand };
+  const von = { x: fuss.x + dy * 1100, y: fuss.y - dx * 1100 };
+  const bis = { x: fuss.x - dy * 1100, y: fuss.y + dx * 1100 };
+  const linie = wasserlinie(rng, von, bis, 3 + rng() * 2, 45 + rng() * 30);
+  const tief = 2500;
+  return [...linie, { x: bis.x + dx * tief, y: bis.y + dy * tief }, { x: von.x + dx * tief, y: von.y + dy * tief }];
 }
 
 function mauerring(rng: Rng, radius: number): Point[] {
@@ -94,8 +118,8 @@ export function erzeugeUmriss(opt: UmrissOptionen): Umriss {
   const radius = opt.radius ?? 330;
   const result: Umriss = { seed: opt.seed, mitte: MITTE, mauer: null, mauerGeschlossen: true, innen: [], tore: [], fluss: null, meer: null };
 
-  if (wasser === 'fluss') result.fluss = fluss(rng);
-  if (wasser === 'kueste') result.meer = meer(rng);
+  if (wasser === 'fluss') result.fluss = fluss(rng, opt.lage);
+  if (wasser === 'kueste') result.meer = meer(rng, opt.lage, radius);
 
   const ring = mauerring(rng, radius);
   result.innen = ring;

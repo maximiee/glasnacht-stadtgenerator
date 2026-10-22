@@ -1,13 +1,14 @@
 import { HEIGHT, WIDTH, dist, inPolygon, smoothLine, type Point } from './geometry';
 import { erzeugeUmriss, type Umriss } from './outline';
 import { createRng, type Rng } from './rng';
-import type { StadtDatei } from './stadt';
+import type { Gelaende, StadtDatei } from './stadt';
 import { erzeugeHaeuser, type Haus } from './haeuser';
 import { setzeOrte, type OrtMarke } from './orte';
 import { erzeugeViertel, type ViertelZelle } from './viertel';
 
 export interface Stadtplan extends Umriss {
   name: string;
+  gelaende: Gelaende;
   viertel: ViertelZelle[];
   grenzen: [Point, Point][];
   /** Straßen als Linienzüge, von der Mitte durch die Tore nach außen. */
@@ -54,7 +55,7 @@ function platzAbseitsVomFluss(mitte: Point, fluss: Umriss['fluss']): Point {
 
 export function erzeugeStadtplan(s: StadtDatei): Stadtplan {
   const seed = s.seed ?? s.name;
-  const umriss = erzeugeUmriss({ seed, wasser: s.wasser, radius: s.radius, mauer: s.mauer, tore: s.tore });
+  const umriss = erzeugeUmriss({ seed, wasser: s.wasser, radius: s.radius, mauer: s.mauer, lage: s.lage, tore: s.tore });
   // Eigene Zufallsfolgen, damit der Umriss gleich bleibt, wenn Viertel oder Straßen sich ändern.
   const { zellen, grenzen } = erzeugeViertel(createRng(`${seed}#viertel`), umriss.innen, umriss.mitte, s.viertel ?? []);
 
@@ -71,7 +72,7 @@ export function erzeugeStadtplan(s: StadtDatei): Stadtplan {
     const aussen = strasse(rng, tor, rand);
     strassen.push(ohneMeer([...innen, ...aussen.slice(1)], umriss.meer));
   }
-  const plan: Stadtplan = { ...umriss, name: s.name, viertel: zellen, grenzen, strassen, haeuser: [], orte: [], platz };
+  const plan: Stadtplan = { ...umriss, name: s.name, gelaende: s.gelaende ?? 'gras', viertel: zellen, grenzen, strassen, haeuser: [], orte: [], platz };
   plan.haeuser = erzeugeHaeuser(createRng(`${seed}#haeuser`), plan);
   const gesetzt = setzeOrte(createRng(`${seed}#orte`), s.orte ?? [], zellen, plan.haeuser);
   plan.haeuser = gesetzt.haeuser;

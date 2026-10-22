@@ -38,3 +38,21 @@ describe('Orte', () => {
     expect(p.orte.map(o => o.name)).toEqual(['Leuchtturm', 'Dom']);
   });
 });
+
+describe('Lage des Wassers', () => {
+  it('legt das Meer in die angegebene Himmelsrichtung', async () => {
+    const { erzeugeStadtplan } = await import('./stadtplan');
+    const mittel = (pts: { x: number; y: number }[]) => ({ x: pts.reduce((s, p) => s + p.x, 0) / pts.length, y: pts.reduce((s, p) => s + p.y, 0) / pts.length });
+    const west = erzeugeStadtplan(liesStadt({ version: 1, name: 'K', wasser: 'kueste', lage: 'west' }));
+    expect(mittel(west.meer!).x).toBeLessThan(west.mitte.x);
+    const nord = erzeugeStadtplan(liesStadt({ version: 1, name: 'K', wasser: 'kueste', lage: 'nord' }));
+    expect(mittel(nord.meer!).y).toBeLessThan(nord.mitte.y);
+  });
+});
+
+describe('Gelände', () => {
+  it('nimmt bekanntes Gelände an und lehnt unbekanntes ab', () => {
+    expect(liesStadt({ version: 1, name: 'D', gelaende: 'wueste' }).gelaende).toBe('wueste');
+    expect(() => liesStadt({ version: 1, name: 'D', gelaende: 'lava' })).toThrow(/gelaende/);
+  });
+});
