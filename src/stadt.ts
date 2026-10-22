@@ -13,6 +13,7 @@ export interface StadtDatei {
   radius?: number;
   wasser?: Wasser;
   mauer?: boolean;
+  tore?: number;
   /** Feste Viertel mit Namen. Lage und Fläche bestimmt der Generator, sofern keine `lage` gesetzt ist. */
   viertel?: { name: string; lage?: 'nord' | 'ost' | 'sued' | 'west' | 'mitte' | 'aussen' }[];
   /** Orte (POI) aus den Glasnacht-Daten, werden später in ihr Viertel gesetzt. */
@@ -33,5 +34,5 @@ export function liesStadt(json: string | unknown): StadtDatei {
 }
 
 export function umrissOptionen(s: StadtDatei): UmrissOptionen {
-  return { seed: s.seed ?? s.name, wasser: s.wasser, radius: s.radius, mauer: s.mauer };
+  return { seed: s.seed ?? s.name, wasser: s.wasser, radius: s.radius, mauer: s.mauer, tore: s.tore };
 }

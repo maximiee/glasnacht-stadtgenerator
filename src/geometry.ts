@@ -49,3 +49,31 @@ export function inPolygon(p: Point, poly: Point[]): boolean {
   }
   return inside;
 }
+
+/** Schneidet die Strecke a-b mit einem (auch konkaven) Polygon, liefert die Teilstrecken innen. */
+export function streckeInPolygon(a: Point, b: Point, poly: Point[]): [Point, Point][] {
+  const ts = [0, 1];
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const c = poly[j]!;
+    const d = poly[i]!;
+    const ex = d.x - c.x;
+    const ey = d.y - c.y;
+    const nenner = dx * ey - dy * ex;
+    if (Math.abs(nenner) < 1e-9) continue;
+    const t = ((c.x - a.x) * ey - (c.y - a.y) * ex) / nenner;
+    const u = ((c.x - a.x) * dy - (c.y - a.y) * dx) / nenner;
+    if (t > 0 && t < 1 && u >= 0 && u <= 1) ts.push(t);
+  }
+  ts.sort((x, y) => x - y);
+  const out: [Point, Point][] = [];
+  for (let k = 0; k < ts.length - 1; k++) {
+    const t0 = ts[k]!;
+    const t1 = ts[k + 1]!;
+    if (t1 - t0 < 1e-6) continue;
+    const m = { x: a.x + dx * ((t0 + t1) / 2), y: a.y + dy * ((t0 + t1) / 2) };
+    if (inPolygon(m, poly)) out.push([{ x: a.x + dx * t0, y: a.y + dy * t0 }, { x: a.x + dx * t1, y: a.y + dy * t1 }]);
+  }
+  return out;
+}

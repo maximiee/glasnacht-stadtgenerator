@@ -9,6 +9,8 @@ export interface UmrissOptionen {
   /** Mauerradius in Metern (Maßstab 1 Einheit = 1 m). */
   radius?: number;
   mauer?: boolean;
+  /** Zahl der Tore (Standard 3). */
+  tore?: number;
 }
 
 export interface Umriss {
@@ -17,6 +19,10 @@ export interface Umriss {
   /** Geschlossener Mauerring, bei Küste ein offener Bogen (Land-Seite). */
   mauer: Point[] | null;
   mauerGeschlossen: boolean;
+  /** Bebautes Stadtgebiet (immer geschlossen, auch ohne Mauer oder bei Küste). */
+  innen: Point[];
+  /** Tore: Punkte auf der Mauer bzw. am Stadtrand. */
+  tore: Point[];
   /** Fluss als Fläche (geschlossenes Polygon) und Mittellinie. */
   fluss: { flaeche: Point[]; mittellinie: Point[] } | null;
   /** Meer als geschlossenes Polygon. */
@@ -86,13 +92,14 @@ export function erzeugeUmriss(opt: UmrissOptionen): Umriss {
   const rng = createRng(opt.seed);
   const wasser = opt.wasser ?? 'fluss';
   const radius = opt.radius ?? 330;
-  const result: Umriss = { seed: opt.seed, mitte: MITTE, mauer: null, mauerGeschlossen: true, fluss: null, meer: null };
+  const result: Umriss = { seed: opt.seed, mitte: MITTE, mauer: null, mauerGeschlossen: true, innen: [], tore: [], fluss: null, meer: null };
 
   if (wasser === 'fluss') result.fluss = fluss(rng);
   if (wasser === 'kueste') result.meer = meer(rng);
 
+  const ring = mauerring(rng, radius);
+  result.innen = ring;
   if (opt.mauer !== false) {
-    const ring = mauerring(rng, radius);
     if (result.meer) {
       // Mauer endet am Wasser: Türme im Meer entfallen, der Bogen bleibt offen.
       const land = ring.filter(p => !inPolygon(p, result.meer!));
@@ -108,5 +115,18 @@ export function erzeugeUmriss(opt: UmrissOptionen): Umriss {
       result.mauer = ring;
     }
   }
+  result.tore = erzeugeTore(rng, ring, result.meer, opt.tore ?? 3);
   return result;
+}
+
+/** Tore auf dem Ring, gleichmäßig verteilt, nicht im Wasser. */
+function erzeugeTore(rng: Rng, ring: Point[], meer: Point[] | null, anzahl: number): Point[] {
+  const land = ring.map((p, i) => ({ p, i })).filter(({ p }) => !meer || !inPolygon(p, meer));
+  const tore: Point[] = [];
+  if (!land.length || anzahl <= 0) return tore;
+  const start = Math.floor(rng() * land.length);
+  for (let k = 0; k < Math.min(anzahl, land.length); k++) {
+    tore.push(land[(start + Math.round((k * land.length) / anzahl)) % land.length]!.p);
+  }
+  return tore;
 }

@@ -19,3 +19,14 @@ describe('liesStadt', () => {
     expect(stadtDateiAlsSvg(j)).toBe(stadtDateiAlsSvg(j));
   });
 });
+
+describe('Stadtplan', () => {
+  it('benennt alle Viertel und setzt Straßen durch die Tore', async () => {
+    const { erzeugeStadtplan } = await import('./stadtplan');
+    const p = erzeugeStadtplan(liesStadt({ version: 1, name: 'T', tore: 4, viertel: [{ name: 'A', lage: 'nord' }, { name: 'B' }, { name: 'C' }, { name: 'D' }, { name: 'E' }] }));
+    expect(p.viertel.map(v => v.name).sort()).toEqual(['A', 'B', 'C', 'D', 'E']);
+    expect(p.viertel.find(v => v.name === 'A')!.mitte.y).toBeLessThan(p.mitte.y);
+    expect(p.strassen).toHaveLength(4);
+    expect(p.grenzen.length).toBeGreaterThan(0);
+  });
+});
