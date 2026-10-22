@@ -58,7 +58,7 @@ export function erzeugeHaeuser(rng: Rng, plan: Stadtplan): Haus[] {
         if (rand > 110 || strasse > 55) continue;
         dichte = 0.5 * (1 - rand / 110);
       }
-      if (plan.mauer && distZuLinie(p, plan.mauer, plan.mauerGeschlossen) < 10) continue;
+      if (plan.mauer && plan.mauer.some(m => distZuLinie(p, m.punkte, m.geschlossen) < 17)) continue;
       if (rng() > dichte || !frei(p)) continue;
 
       let nah = 0;

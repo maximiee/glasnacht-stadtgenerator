@@ -1,4 +1,4 @@
-import { HEIGHT, WIDTH, inPolygon, offsetLine, smoothLine, type Point } from './geometry';
+import { HEIGHT, WIDTH, dist, inPolygon, linieOhnePolygon, linienlaenge, offsetLine, smoothLine, type Point } from './geometry';
 import { createRng, type Rng } from './rng';
 
 export type Wasser = 'fluss' | 'kueste' | 'keins';
@@ -21,9 +21,11 @@ export interface UmrissOptionen {
 export interface Umriss {
   seed: string | number;
   mitte: Point;
-  /** Geschlossener Mauerring, bei Küste ein offener Bogen (Land-Seite). */
-  mauer: Point[] | null;
-  mauerGeschlossen: boolean;
+  /**
+   * Mauerstücke. Ohne Wasser ein geschlossener Ring, sonst offene Stücke, die am Ufer enden
+   * (Küste: ein Bogen von Ufer zu Ufer, Fluss: Lücke an der Flussbreite).
+   */
+  mauer: { punkte: Point[]; geschlossen: boolean }[] | null;
   /** Bebautes Stadtgebiet (immer geschlossen, auch ohne Mauer oder bei Küste). */
   innen: Point[];
   /** Tore: Punkte auf der Mauer bzw. am Stadtrand. */
@@ -88,7 +90,7 @@ function meer(rng: Rng, lage: string | undefined, radius: number): Point[] {
   const winkel = richtungswinkel(lage) ?? Math.floor(rng() * 4) * (Math.PI / 2);
   const dx = Math.cos(winkel);
   const dy = Math.sin(winkel);
-  const abstand = radius + 40 + rng() * 70;
+  const abstand = radius * 0.85 + rng() * 30;
   const fuss = { x: MITTE.x + dx * abstand, y: MITTE.y + dy * abstand };
   const von = { x: fuss.x + dy * 1100, y: fuss.y - dx * 1100 };
   const bis = { x: fuss.x - dy * 1100, y: fuss.y + dx * 1100 };
@@ -111,41 +113,45 @@ function mauerring(rng: Rng, radius: number): Point[] {
   return pts;
 }
 
+/** Schneidet den Mauerring an Meer und Fluss auf: Die Mauer läuft bis ans Wasser und endet dort. */
+function mauerStuecke(ring: Point[], wasser: (Point[] | null)[]): { punkte: Point[]; geschlossen: boolean }[] {
+  let stuecke: Point[][] = [[...ring, ring[0]!]];
+  let geschnitten = false;
+  for (const w of wasser) {
+    if (!w) continue;
+    const neu = stuecke.flatMap(st => linieOhnePolygon(st, w));
+    if (neu.length !== 1 || dist(neu[0]![0]!, neu[0]![neu[0]!.length - 1]!) > 0.5 || neu[0]!.length !== stuecke[0]!.length) geschnitten = true;
+    stuecke = neu;
+    // Beginnt der Ring an Land, hängen erstes und letztes Stück zusammen.
+    if (stuecke.length > 1 && dist(stuecke[0]![0]!, stuecke[stuecke.length - 1]![stuecke[stuecke.length - 1]!.length - 1]!) < 0.5) {
+      const letztes = stuecke.pop()!;
+      stuecke[0] = [...letztes, ...stuecke[0]!.slice(1)];
+    }
+  }
+  if (!geschnitten) return [{ punkte: ring, geschlossen: true }];
+  return stuecke.filter(st => linienlaenge(st) > 40).map(punkte => ({ punkte, geschlossen: false }));
+}
+
 /** Erzeugt Umriss der Stadt: Mauer, Fluss oder Küste. Gleicher Seed, gleiches Ergebnis. */
 export function erzeugeUmriss(opt: UmrissOptionen): Umriss {
   const rng = createRng(opt.seed);
   const wasser = opt.wasser ?? 'fluss';
   const radius = opt.radius ?? 330;
-  const result: Umriss = { seed: opt.seed, mitte: MITTE, mauer: null, mauerGeschlossen: true, innen: [], tore: [], fluss: null, meer: null };
+  const result: Umriss = { seed: opt.seed, mitte: MITTE, mauer: null, innen: [], tore: [], fluss: null, meer: null };
 
   if (wasser === 'fluss') result.fluss = fluss(rng, opt.lage);
   if (wasser === 'kueste') result.meer = meer(rng, opt.lage, radius);
 
   const ring = mauerring(rng, radius);
   result.innen = ring;
-  if (opt.mauer !== false) {
-    if (result.meer) {
-      // Mauer endet am Wasser: Türme im Meer entfallen, der Bogen bleibt offen.
-      const land = ring.filter(p => !inPolygon(p, result.meer!));
-      if (land.length < ring.length) {
-        const start = ring.findIndex((p, i) => !inPolygon(p, result.meer!) && inPolygon(ring[(i + ring.length - 1) % ring.length]!, result.meer!));
-        const sortiert = start >= 0 ? [...ring.slice(start), ...ring.slice(0, start)].filter(p => !inPolygon(p, result.meer!)) : land;
-        result.mauer = sortiert;
-        result.mauerGeschlossen = false;
-      } else {
-        result.mauer = ring;
-      }
-    } else {
-      result.mauer = ring;
-    }
-  }
-  result.tore = erzeugeTore(rng, ring, result.meer, opt.tore ?? 3);
+  if (opt.mauer !== false) result.mauer = mauerStuecke(ring, [result.meer, result.fluss?.flaeche ?? null]);
+  result.tore = erzeugeTore(rng, ring, [result.meer, result.fluss?.flaeche ?? null], opt.tore ?? 3);
   return result;
 }
 
 /** Tore auf dem Ring, gleichmäßig verteilt, nicht im Wasser. */
-function erzeugeTore(rng: Rng, ring: Point[], meer: Point[] | null, anzahl: number): Point[] {
-  const land = ring.map((p, i) => ({ p, i })).filter(({ p }) => !meer || !inPolygon(p, meer));
+function erzeugeTore(rng: Rng, ring: Point[], wasser: (Point[] | null)[], anzahl: number): Point[] {
+  const land = ring.map((p, i) => ({ p, i })).filter(({ p }) => wasser.every(w => !w || !inPolygon(p, w)));
   const tore: Point[] = [];
   if (!land.length || anzahl <= 0) return tore;
   const start = Math.floor(rng() * land.length);

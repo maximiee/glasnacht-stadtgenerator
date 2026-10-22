@@ -56,3 +56,36 @@ describe('Gelände', () => {
     expect(() => liesStadt({ version: 1, name: 'D', gelaende: 'lava' })).toThrow(/gelaende/);
   });
 });
+
+describe('Mauer und Größe', () => {
+  it('läuft an der Küste bis ans Ufer', async () => {
+    const { erzeugeStadtplan } = await import('./stadtplan');
+    const { distZuLinie } = await import('./geometry');
+    const p = erzeugeStadtplan(liesStadt({ version: 1, name: 'K', wasser: 'kueste', lage: 'west', einwohner: 45000 }));
+    expect(p.mauer).toHaveLength(1);
+    const m = p.mauer![0]!;
+    expect(m.geschlossen).toBe(false);
+    for (const ende of [m.punkte[0]!, m.punkte[m.punkte.length - 1]!]) expect(distZuLinie(ende, p.meer!, true)).toBeLessThan(1.5);
+  });
+
+  it('hält Häuser von der Mauer fern', async () => {
+    const { erzeugeStadtplan } = await import('./stadtplan');
+    const { distZuLinie } = await import('./geometry');
+    for (const wasser of ['fluss', 'kueste', 'keins'] as const) {
+      const p = erzeugeStadtplan(liesStadt({ version: 1, name: `H-${wasser}`, wasser, einwohner: 20000 }));
+      for (const h of [...p.haeuser, ...p.orte]) {
+        for (const e of 'ecken' in h ? h.ecken : []) {
+          for (const m of p.mauer!) expect(distZuLinie(e, m.punkte, m.geschlossen)).toBeGreaterThan(5);
+        }
+      }
+    }
+  });
+
+  it('macht größere Städte größer und stimmt den Maßstab ab', async () => {
+    const { radiusFuer, meterProEinheit } = await import('./stadt');
+    expect(radiusFuer({ einwohner: 80000 })).toBeGreaterThan(radiusFuer({ einwohner: 5000 }) * 1.7);
+    expect(meterProEinheit({ einwohner: 80000 })).toBeGreaterThan(meterProEinheit({ einwohner: 5000 }));
+    // Echter Mauerradius in Metern wächst mit der Einwohnerzahl
+    expect(radiusFuer({ einwohner: 80000 }) * meterProEinheit({ einwohner: 80000 })).toBeGreaterThan(3 * radiusFuer({ einwohner: 5000 }) * meterProEinheit({ einwohner: 5000 }));
+  });
+});

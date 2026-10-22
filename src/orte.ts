@@ -1,4 +1,4 @@
-import { dist, type Point } from './geometry';
+import { dist, distZuLinie, type Point } from './geometry';
 import type { Haus } from './haeuser';
 import type { Rng } from './rng';
 import type { ViertelZelle } from './viertel';
@@ -19,7 +19,7 @@ const mittelpunkt = (h: Haus): Point => ({
  * Setzt jeden Ort als großes Gebäude in sein Viertel (Angabe `viertel`, sonst reihum).
  * Häuser in der Nähe weichen. Liegt kein Haus im Viertel, wird der Ort nicht gesetzt.
  */
-export function setzeOrte(rng: Rng, orte: { name: string; viertel?: string }[], viertel: ViertelZelle[], haeuser: Haus[]): { marken: OrtMarke[]; haeuser: Haus[] } {
+export function setzeOrte(rng: Rng, orte: { name: string; viertel?: string }[], viertel: ViertelZelle[], haeuser: Haus[], mauer: { punkte: Point[]; geschlossen: boolean }[] | null = null): { marken: OrtMarke[]; haeuser: Haus[] } {
   const mitten = haeuser.map(mittelpunkt);
   const zugehoerig = mitten.map(m => viertel.reduce((b, v, i) => (dist(m, v.mitte) < dist(m, viertel[b]!.mitte) ? i : b), 0));
   const entfernt = new Set<number>();
@@ -30,7 +30,7 @@ export function setzeOrte(rng: Rng, orte: { name: string; viertel?: string }[], 
     if (ziel < 0) ziel = n % viertel.length;
     const kandidaten = mitten
       .map((m, i) => ({ m, i }))
-      .filter(({ i }) => zugehoerig[i] === ziel && !entfernt.has(i) && !marken.some(k => dist(k.mitte, mitten[i]!) < 40))
+      .filter(({ i }) => zugehoerig[i] === ziel && !entfernt.has(i) && !mauer?.some(m => distZuLinie(mitten[i]!, m.punkte, m.geschlossen) < 30) && !marken.some(k => dist(k.mitte, mitten[i]!) < 40))
       .sort((a, b) => dist(a.m, viertel[ziel]!.mitte) - dist(b.m, viertel[ziel]!.mitte))
       .slice(0, 12);
     const wahl = kandidaten[Math.floor(rng() * kandidaten.length)];

@@ -94,14 +94,16 @@ function kompass(F: Palette): string {
 </g>`;
 }
 
-/** Maßstab: 1 Einheit = 2 m, Balken 0 / 100 / 200 m in abwechselnd dunklen Feldern. */
-function massstab(F: Palette): string {
+/** Maßstab: ein Balken aus drei Feldern mit runder Länge, passend zu den Metern je Einheit. */
+function massstab(F: Palette, mProEinheit: number): string {
+  const rund = [10, 20, 25, 50, 100, 200, 250, 500, 1000];
+  const feldM = rund.find(m => m / mProEinheit >= 45) ?? 1000; // Feld mindestens 45 Einheiten breit
+  const seg = feldM / mProEinheit;
   const x0 = 58;
   const y0 = HEIGHT - 70;
-  const seg = 50; // 50 Einheiten = 100 m
-  const balken = [0, 1, 2].map(i => `<rect x="${x0 + i * seg}" y="${y0}" width="${seg}" height="8" fill="${i % 2 ? F.pergament : F.tinte}" stroke="${F.tinte}" stroke-width="1"/>`).join('');
-  const zahlen = ['0', '100', '200 m'].map((t, i) => `<text x="${x0 + i * seg}" y="${y0 - 6}" font-family="${SCHRIFT}" font-size="13" text-anchor="${i === 2 ? 'start' : 'middle'}" fill="${F.text}">${t}</text>`).join('');
-  return `<g><rect x="${x0 - 22}" y="${y0 - 28}" width="${3 * seg + 74}" height="54" fill="${F.pergament}" fill-opacity=".85" stroke="${F.tinte}" stroke-width="1.2"/>${balken}${zahlen}</g>`;
+  const balken = [0, 1, 2].map(i => `<rect x="${f(x0 + i * seg)}" y="${y0}" width="${f(seg)}" height="8" fill="${i % 2 ? F.pergament : F.tinte}" stroke="${F.tinte}" stroke-width="1"/>`).join('');
+  const zahlen = ['0', String(feldM), `${feldM * 2} m`].map((t, i) => `<text x="${f(x0 + i * seg)}" y="${y0 - 6}" font-family="${SCHRIFT}" font-size="13" text-anchor="${i === 2 ? 'start' : 'middle'}" fill="${F.text}">${t}</text>`).join('');
+  return `<g><rect x="${x0 - 22}" y="${y0 - 28}" width="${f(3 * seg + 74)}" height="54" fill="${F.pergament}" fill-opacity=".85" stroke="${F.tinte}" stroke-width="1.2"/>${balken}${zahlen}</g>`;
 }
 
 function titel(name: string, F: Palette): string {
@@ -173,11 +175,11 @@ export function rendereSvg(u: Stadtplan, name = u.name): string {
 
   // Mauer mit Türmen
   if (u.mauer) {
-    const m = pfad(u.mauer, u.mauerGeschlossen);
-    t.push(`<path d="${m}" fill="none" stroke="#3a2410" opacity=".3" stroke-width="10" stroke-linejoin="round" transform="translate(2 2)"/>`);
-    t.push(`<path d="${m}" fill="none" stroke="${F.tinte}" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>`);
-    t.push(`<path d="${m}" fill="none" stroke="${F.stein}" stroke-width="5.4" stroke-linejoin="round" stroke-linecap="round"/>`);
-    for (const p of u.mauer) t.push(`<circle cx="${f(p.x)}" cy="${f(p.y)}" r="7.5" fill="${F.turm}" stroke="${F.tinte}" stroke-width="1.8"/>`);
+    const pfade = u.mauer.map(m => pfad(m.punkte, m.geschlossen)).join('');
+    t.push(`<path d="${pfade}" fill="none" stroke="#3a2410" opacity=".3" stroke-width="10" stroke-linejoin="round" transform="translate(2 2)"/>`);
+    t.push(`<path d="${pfade}" fill="none" stroke="${F.tinte}" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"/>`);
+    t.push(`<path d="${pfade}" fill="none" stroke="${F.stein}" stroke-width="5.4" stroke-linejoin="round" stroke-linecap="round"/>`);
+    for (const m of u.mauer) for (const p of m.punkte) t.push(`<circle cx="${f(p.x)}" cy="${f(p.y)}" r="7.5" fill="${F.turm}" stroke="${F.tinte}" stroke-width="1.8"/>`);
     for (const tor of u.tore) t.push(`<rect x="${f(tor.x - 9)}" y="${f(tor.y - 9)}" width="18" height="18" fill="${F.turm}" stroke="${F.tinte}" stroke-width="2" transform="rotate(45 ${f(tor.x)} ${f(tor.y)})"/>`);
   }
 
@@ -195,6 +197,6 @@ export function rendereSvg(u: Stadtplan, name = u.name): string {
   t.push(`<rect width="${WIDTH}" height="${HEIGHT}" filter="url(#koernung)" opacity=".5"/>`);
   t.push(`<rect width="${WIDTH}" height="${HEIGHT}" fill="url(#vignette)"/></g>`);
 
-  t.push(rahmen(F), titel(name, F), massstab(F), kompass(F));
+  t.push(rahmen(F), titel(name, F), massstab(F, u.meterProEinheit), kompass(F));
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${WIDTH} ${HEIGHT}" width="${WIDTH}" height="${HEIGHT}">${defs(F)}${t.join('')}</svg>`;
 }

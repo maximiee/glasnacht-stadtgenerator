@@ -9,7 +9,9 @@ export interface StadtDatei {
   name: string;
   /** Gleicher Seed ergibt dieselbe Stadt. Standard: der Name. */
   seed?: string | number;
-  /** Mauerradius in Metern (grobe Stadtgröße). */
+  /** Einwohnerzahl, bestimmt die Größe der Stadt (z. B. 80000 oder 5000). */
+  einwohner?: number;
+  /** Mauerradius in Zeichnungseinheiten, überschreibt die Größe nach `einwohner`. */
   radius?: number;
   wasser?: Wasser;
   mauer?: boolean;
@@ -32,6 +34,23 @@ const GELAENDE: Gelaende[] = ['gras', 'wueste', 'eis', 'gebirge'];
 
 const WASSER: Wasser[] = ['fluss', 'kueste', 'keins'];
 
+const REF_EINWOHNER = 80000;
+const REF_RADIUS_M = 900;
+
+/** Mauerradius in Zeichnungseinheiten: wächst mit der Wurzel der Einwohnerzahl (Fläche ~ Einwohner), 5.000 → ca. 210, 80.000 → 400. */
+export function radiusFuer(s: Pick<StadtDatei, 'einwohner' | 'radius'>): number {
+  if (s.einwohner !== undefined && (typeof s.einwohner !== 'number' || s.einwohner < 500 || s.einwohner > 200000)) throw new Error('Feld "einwohner" muss eine Zahl zwischen 500 und 200000 sein');
+  if (s.radius !== undefined) return s.radius;
+  if (s.einwohner === undefined) return 330;
+  return 150 + 250 * Math.sqrt(Math.min(s.einwohner, REF_EINWOHNER) / REF_EINWOHNER);
+}
+
+/** Meter je Zeichnungseinheit: Der echte Mauerradius wächst ebenfalls mit der Wurzel der Einwohnerzahl (80.000 → 900 m). */
+export function meterProEinheit(s: Pick<StadtDatei, 'einwohner' | 'radius'>): number {
+  if (s.einwohner === undefined) return 2;
+  return (REF_RADIUS_M * Math.sqrt(Math.min(s.einwohner, REF_EINWOHNER) / REF_EINWOHNER)) / radiusFuer(s);
+}
+
 export function liesStadt(json: string | unknown): StadtDatei {
   const roh = typeof json === 'string' ? JSON.parse(json) : json;
   if (typeof roh !== 'object' || roh === null) throw new Error('Stadt-JSON muss ein Objekt sein');
@@ -45,5 +64,5 @@ export function liesStadt(json: string | unknown): StadtDatei {
 }
 
 export function umrissOptionen(s: StadtDatei): UmrissOptionen {
-  return { seed: s.seed ?? s.name, wasser: s.wasser, radius: s.radius, mauer: s.mauer, lage: s.lage, tore: s.tore };
+  return { seed: s.seed ?? s.name, wasser: s.wasser, radius: radiusFuer(s), mauer: s.mauer, lage: s.lage, tore: s.tore };
 }

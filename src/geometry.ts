@@ -50,8 +50,8 @@ export function inPolygon(p: Point, poly: Point[]): boolean {
   return inside;
 }
 
-/** Schneidet die Strecke a-b mit einem (auch konkaven) Polygon, liefert die Teilstrecken innen. */
-export function streckeInPolygon(a: Point, b: Point, poly: Point[]): [Point, Point][] {
+/** Schneidet die Strecke a-b mit einem (auch konkaven) Polygon, liefert die Teilstrecken innen (oder mit `innen = false` außerhalb). */
+export function streckeInPolygon(a: Point, b: Point, poly: Point[], innen = true): [Point, Point][] {
   const ts = [0, 1];
   const dx = b.x - a.x;
   const dy = b.y - a.y;
@@ -73,7 +73,7 @@ export function streckeInPolygon(a: Point, b: Point, poly: Point[]): [Point, Poi
     const t1 = ts[k + 1]!;
     if (t1 - t0 < 1e-6) continue;
     const m = { x: a.x + dx * ((t0 + t1) / 2), y: a.y + dy * ((t0 + t1) / 2) };
-    if (inPolygon(m, poly)) out.push([{ x: a.x + dx * t0, y: a.y + dy * t0 }, { x: a.x + dx * t1, y: a.y + dy * t1 }]);
+    if (inPolygon(m, poly) === innen) out.push([{ x: a.x + dx * t0, y: a.y + dy * t0 }, { x: a.x + dx * t1, y: a.y + dy * t1 }]);
   }
   return out;
 }
@@ -91,4 +91,28 @@ export function distZuLinie(p: Point, linie: Point[], geschlossen = false): numb
   const n = geschlossen ? linie.length : linie.length - 1;
   for (let i = 0; i < n; i++) d = Math.min(d, distZuStrecke(p, linie[i]!, linie[(i + 1) % linie.length]!));
   return d;
+}
+
+/** Schneidet die Teile einer Linie weg, die im Polygon liegen. Übrig bleiben die Stücke außerhalb (mit Schnittpunkten am Rand). */
+export function linieOhnePolygon(linie: Point[], poly: Point[]): Point[][] {
+  const stuecke: Point[][] = [];
+  let aktuell: Point[] | null = null;
+  for (let i = 0; i < linie.length - 1; i++) {
+    const b = linie[i + 1]!;
+    const segs = streckeInPolygon(linie[i]!, b, poly, false);
+    for (const [p, q] of segs) {
+      const last: Point | undefined = aktuell?.[aktuell.length - 1];
+      if (aktuell && last && dist(last, p) < 0.5) aktuell.push(q);
+      else { aktuell = [p, q]; stuecke.push(aktuell); }
+    }
+    const ende: Point | undefined = aktuell?.[aktuell.length - 1];
+    if (!ende || dist(ende, b) > 0.5) aktuell = null;
+  }
+  return stuecke;
+}
+
+export function linienlaenge(linie: Point[]): number {
+  let l = 0;
+  for (let i = 1; i < linie.length; i++) l += dist(linie[i - 1]!, linie[i]!);
+  return l;
 }

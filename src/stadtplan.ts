@@ -1,7 +1,7 @@
 import { HEIGHT, WIDTH, dist, distZuLinie, inPolygon, smoothLine, type Point } from './geometry';
 import { erzeugeUmriss, type Umriss } from './outline';
 import { createRng, type Rng } from './rng';
-import type { Gelaende, StadtDatei } from './stadt';
+import { meterProEinheit, radiusFuer, type Gelaende, type StadtDatei } from './stadt';
 import { erzeugeHaeuser, type Haus } from './haeuser';
 import { setzeOrte, type OrtMarke } from './orte';
 import { erzeugeViertel, type ViertelZelle } from './viertel';
@@ -9,6 +9,8 @@ import { erzeugeViertel, type ViertelZelle } from './viertel';
 export interface Stadtplan extends Umriss {
   name: string;
   gelaende: Gelaende;
+  /** Maßstab: so viele Meter entsprechen einer Zeichnungseinheit. */
+  meterProEinheit: number;
   viertel: ViertelZelle[];
   grenzen: [Point, Point][];
   /** Straßen als Linienzüge, von der Mitte durch die Tore nach außen. */
@@ -110,7 +112,7 @@ function richtungZumWasser(u: Umriss): Point | null {
 
 export function erzeugeStadtplan(s: StadtDatei): Stadtplan {
   const seed = s.seed ?? s.name;
-  const umriss = erzeugeUmriss({ seed, wasser: s.wasser, radius: s.radius, mauer: s.mauer, lage: s.lage, tore: s.tore });
+  const umriss = erzeugeUmriss({ seed, wasser: s.wasser, radius: radiusFuer(s), mauer: s.mauer, lage: s.lage, tore: s.tore });
   // Eigene Zufallsfolgen, damit der Umriss gleich bleibt, wenn Viertel oder Straßen sich ändern.
   const { zellen, grenzen } = erzeugeViertel(createRng(`${seed}#viertel`), umriss.innen, umriss.mitte, s.viertel ?? [], richtungZumWasser(umriss));
 
@@ -144,9 +146,9 @@ export function erzeugeStadtplan(s: StadtDatei): Stadtplan {
       break;
     }
   }
-  const plan: Stadtplan = { ...umriss, name: s.name, gelaende: s.gelaende ?? 'gras', viertel: zellen, grenzen, strassen, haeuser: [], orte: [], baeume: [], platz };
+  const plan: Stadtplan = { ...umriss, name: s.name, gelaende: s.gelaende ?? 'gras', meterProEinheit: meterProEinheit(s), viertel: zellen, grenzen, strassen, haeuser: [], orte: [], baeume: [], platz };
   plan.haeuser = erzeugeHaeuser(createRng(`${seed}#haeuser`), plan);
-  const gesetzt = setzeOrte(createRng(`${seed}#orte`), s.orte ?? [], zellen, plan.haeuser);
+  const gesetzt = setzeOrte(createRng(`${seed}#orte`), s.orte ?? [], zellen, plan.haeuser, plan.mauer);
   plan.haeuser = gesetzt.haeuser;
   plan.orte = gesetzt.marken;
   plan.baeume = streueBaeume(createRng(`${seed}#baeume`), plan);
