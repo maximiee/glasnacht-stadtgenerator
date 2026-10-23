@@ -3,7 +3,7 @@ import { legeBeschriftung } from './beschriftung';
 import type { Stadtplan } from './stadtplan';
 
 // Farben im Stil alter Pergamentkarten (siehe docs/Stilvorlage.md)
-const FARBE = {
+export const FARBE = {
   pergament: '#ecd9a6',
   rand: '#d4b97a',
   wasser: '#a9c4b4',
@@ -35,23 +35,23 @@ const FARBE = {
 };
 
 /** Abweichende Farben je Gelände (Rest wie `FARBE`). */
-const PALETTE: Record<Stadtplan['gelaende'], Partial<typeof FARBE>> = {
+export const PALETTE: Record<Stadtplan['gelaende'], Partial<typeof FARBE>> = {
   gras: {},
   wueste: { pergament: '#f0d79c', rand: '#cfac66', dach1: '#d2a468', dach2: '#c4935a', dach3: '#dcb77c', gasse: '#c9a867', strasse: '#a58048', wasser: '#a8c8bc', baum: '#8a8a4c', baumRand: '#4f4f2a', park: '#c3c88a', platz: '#e6d3a2' },
   eis: { pergament: '#e4ebed', rand: '#b9c8d0', dach1: '#d6dee3', dach2: '#c5d0d8', dach3: '#e8eef1', hausRand: '#4c6272', stein: '#c0cdd4', gasse: '#9fb1bd', strasse: '#6f8493', bruecke: '#c8d6de', wasser: '#b3cfdc', wasserRand: '#4b7488', tinte: '#2f3d48', text: '#2f3d48', baum: '#9db3b0', baumRand: '#4c6a6a', park: '#d3dedc', parkRand: '#6a8484', platz: '#dfe7ea' },
   gebirge: { pergament: '#e5d8b8', rand: '#c3b08a', dach1: '#a98870', dach2: '#98785f', dach3: '#b99a80', hausRand: '#4a382c', gasse: '#a8967a', strasse: '#6b5a48', baum: '#697a4a', baumRand: '#3a4a2a' },
 };
 
-type Palette = typeof FARBE;
+export type Palette = typeof FARBE;
 
-const f = (n: number) => n.toFixed(1);
+export const f = (n: number) => n.toFixed(1);
 const pfad = (pts: Point[], schliessen: boolean) => pts.map((p, i) => `${i ? 'L' : 'M'}${f(p.x)} ${f(p.y)}`).join('') + (schliessen ? 'Z' : '');
 const polygone = (liste: Point[][], dx = 0, dy = 0) => liste.map(e => 'M' + e.map(p => `${f(p.x + dx)} ${f(p.y + dy)}`).join('L') + 'Z').join('');
 
-const SCHRIFT = `Palatino, 'Palatino Linotype', 'Book Antiqua', Georgia, serif`;
-const RAND = 22; // Abstand des inneren Rahmens zum Blattrand
+export const SCHRIFT = `Palatino, 'Palatino Linotype', 'Book Antiqua', Georgia, serif`;
+export const RAND = 22; // Abstand des inneren Rahmens zum Blattrand
 
-function defs(F: Palette): string {
+export function defs(F: Palette): string {
   return `<defs>
 <filter id="papier" x="0" y="0" width="100%" height="100%">
 <feTurbulence type="fractalNoise" baseFrequency="0.011 0.016" numOctaves="4" seed="7" result="n"/>
@@ -105,7 +105,7 @@ function schiff(s: { mitte: Point; winkel: number; laenge: number; breite: numbe
 </g>`;
 }
 
-function kompass(F: Palette): string {
+export function kompass(F: Palette): string {
   const cx = WIDTH - 96;
   const cy = HEIGHT - 96;
   const spitzen: string[] = [];
@@ -124,8 +124,7 @@ function kompass(F: Palette): string {
 }
 
 /** Maßstab: ein Balken aus drei Feldern mit runder Länge, passend zu den Metern je Einheit. */
-function massstab(F: Palette, mProEinheit: number): string {
-  const rund = [10, 20, 25, 50, 100, 200, 250, 500, 1000];
+export function massstab(F: Palette, mProEinheit: number, rund: number[] = [10, 20, 25, 50, 100, 200, 250, 500, 1000]): string {
   const feldM = rund.find(m => m / mProEinheit >= 45) ?? 1000; // Feld mindestens 45 Einheiten breit
   const seg = feldM / mProEinheit;
   const x0 = 58;
@@ -135,8 +134,8 @@ function massstab(F: Palette, mProEinheit: number): string {
   return `<g><rect x="${x0 - 22}" y="${y0 - 28}" width="${f(3 * seg + 74)}" height="54" fill="${F.pergament}" fill-opacity=".85" stroke="${F.tinte}" stroke-width="1.2"/>${balken}${zahlen}</g>`;
 }
 
-function titel(name: string, F: Palette): string {
-  const w = 380;
+export function titel(name: string, F: Palette): string {
+  const w = Math.max(380, name.length * 27 + 70);
   const x = (WIDTH - w) / 2;
   return `<g>
 <rect x="${x}" y="${RAND - 6}" width="${w}" height="66" fill="${F.pergament}" stroke="${F.tinte}" stroke-width="2.2"/>
@@ -145,7 +144,7 @@ function titel(name: string, F: Palette): string {
 </g>`;
 }
 
-function rahmen(F: Palette): string {
+export function rahmen(F: Palette): string {
   const ecken = [[RAND, RAND], [WIDTH - RAND, RAND], [RAND, HEIGHT - RAND], [WIDTH - RAND, HEIGHT - RAND]]
     .map(([x, y]) => `<rect x="${x! - 7}" y="${y! - 7}" width="14" height="14" fill="${F.tinte}"/>`).join('');
   return `<g fill="none" stroke="${F.tinte}">

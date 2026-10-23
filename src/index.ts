@@ -4,6 +4,8 @@ import { rendereSvg } from './render';
 import { liesStadt, umrissOptionen, type StadtDatei } from './stadt';
 import { legeBeschriftung } from './beschriftung';
 import { WIDTH, HEIGHT } from './geometry';
+import { erzeugeGebaeude, liesGebaeude } from './gebaeude';
+import { rendereGebaeude, type GebaeudeKarte } from './gebaeudeRender';
 
 export { erzeugeUmriss, erzeugeStadtplan, rendereSvg, liesStadt, umrissOptionen };
 export type { UmrissOptionen, StadtDatei };
@@ -47,4 +49,18 @@ export function stadtDateiAlsKarte(json: string | unknown): StadtKarte {
     kurz: kurz.get(l.name) ?? '',
   }));
   return { svg: rendereSvg(plan, s.name), breite: WIDTH, hoehe: HEIGHT, marken };
+}
+
+export { liesGebaeude, erzeugeGebaeude, RAUM_ARTEN, GEBAEUDE_MAX_ETAGEN, GEBAEUDE_MAX_RAEUME } from './gebaeude';
+export type { GebaeudeDatei, RaumArt, RaumEingabe, EtageEingabe, Gebaeudeplan } from './gebaeude';
+export { rendereGebaeude, type GebaeudeKarte } from './gebaeudeRender';
+
+/** Gebäude-JSON laden, Grundriss erzeugen und zeichnen; dazu die nummerierten Räume mit Kurztext. */
+export function gebaeudeDateiAlsKarte(json: string | unknown): GebaeudeKarte {
+  return rendereGebaeude(erzeugeGebaeude(liesGebaeude(json)));
+}
+
+/** Ob ein JSON ein Gebäude (mit `raeume` oder `etagen`) statt einer Stadt beschreibt. */
+export function istGebaeude(json: unknown): boolean {
+  return typeof json === 'object' && json !== null && ('raeume' in json || 'etagen' in json);
 }

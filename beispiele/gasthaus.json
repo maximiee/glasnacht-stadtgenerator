@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "name": "Gasthaus Zur Furt",
+  "typ": "Gasthaus",
+  "seed": "furt",
+  "etagen": [
+    { "name": "Erdgeschoss", "raeume": [
+      { "name": "Schankstube", "art": "schankraum", "flaeche": 44, "kurz": "Der große Gastraum mit Theke und Kamin." },
+      { "name": "Küche", "art": "kueche", "flaeche": 16, "kurz": "Hier kocht die Wirtin." },
+      { "name": "Vorratskammer", "art": "vorrat", "flaeche": 9 },
+      { "name": "Stube der Wirtsleute", "art": "wohnraum", "flaeche": 18 },
+      { "name": "Weinkeller-Zugang", "art": "kammer", "flaeche": 8 }
+    ] },
+    { "name": "Obergeschoss", "raeume": [
+      { "name": "Gästezimmer Nord", "art": "schlafraum", "flaeche": 14 },
+      { "name": "Gästezimmer Süd", "art": "schlafraum", "flaeche": 14 },
+      { "name": "Gemeinschaftsraum", "art": "schlafraum", "flaeche": 24, "kurz": "Strohlager für Reisende mit schmalem Beutel." },
+      { "name": "Kammer der Magd", "art": "kammer", "flaeche": 8 }
+    ] }
+  ]
+}

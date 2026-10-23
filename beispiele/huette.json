@@ -1,0 +1,1 @@
+{ "version": 1, "name": "Hütte am Waldrand", "raeume": [ { "name": "Stube", "art": "wohnraum", "flaeche": 24 }, { "name": "Schlafnische", "art": "schlafraum", "flaeche": 8 } ] }

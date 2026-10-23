@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "name": "Kapelle der Bewahrer",
+  "typ": "Tempel",
+  "raeume": [
+    { "name": "Kirchenschiff", "art": "altar", "flaeche": 80, "kurz": "Bänke und der Altar des Lichts." },
+    { "name": "Sakristei", "art": "kammer", "flaeche": 12 },
+    { "name": "Priesterstube", "art": "wohnraum", "flaeche": 18 },
+    { "name": "Archivnische", "art": "lager", "flaeche": 10 }
+  ]
+}

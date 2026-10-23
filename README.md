@@ -26,3 +26,6 @@ TypeScript, Vite, Vitest. Eigener Algorithmus, **kein** Code aus TownGeneratorOS
 
 ## Stand
 Umriss (Mauer, Fluss, Küste), Viertel, Tore, Straßen, Brücken, Häuser, Orte, Plätze, Parks (in der Wüste Oasen), Hafen, Felder und Zitadellen sind im Stil der Vorlage umgesetzt. Größe und Maßstab folgen der Einwohnerzahl. Offen: Feinschliff der Beschriftung (Namen teils über Parks oder Mauern), kurze Kais an breiten Küsten.
+
+## Gebäudepläne
+Grundrisse für einzelne Gebäude: JSON mit `name`, `etagen` (oder `raeume` für ein Stockwerk), je Raum `name`, `art`, `flaeche`, `kurz`. Der Generator teilt die Grundfläche, setzt Türen (alle Räume erreichbar), Fenster, Treppenhaus und Möbel; Beispiele in `beispiele/`. `gebaeudeDateiAlsKarte(json)` liefert SVG und die nummerierten Räume. `npm run svg -- beispiele/gasthaus.json out.svg` erkennt Gebäude an `raeume`/`etagen`.
