@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "name": "Die Tropfsteinhöhle",
+  "seed": "tropf",
+  "gelaende": "gebirge",
+  "kammern": [
+    { "name": "Eingangshalle", "art": "eingang", "kurz": "Feuchter Fels, vom Tageslicht noch erreicht." },
+    { "name": "Die Säulenhalle", "art": "halle", "durchmesser": 20, "kurz": "Tropfsteine wie Säulen." },
+    { "name": "Der Schwarze See", "art": "see", "kurz": "Tiefes, stilles Wasser." },
+    { "name": "Schlafplatz", "art": "lager", "kurz": "Alte Decken und eine kalte Feuerstelle." },
+    { "name": "Der Schacht", "art": "schacht", "kurz": "Ein Loch, das nach unten führt." },
+    { "name": "Schatzkammer", "art": "schatz" },
+    { "name": "Nische", "art": "nische" },
+    { "name": "Brutstätte", "art": "brut", "kurz": "Hier legen die Höhlenspinnen ihre Eier." }
+  ]
+}

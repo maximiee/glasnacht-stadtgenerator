@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync } from 'node:fs';
-import { gebaeudeDateiAlsKarte, istGebaeude, stadtDateiAlsSvg } from './index';
+import { gebaeudeDateiAlsKarte, hoehleDateiAlsKarte, istGebaeude, istHoehle, stadtDateiAlsSvg } from './index';
 
 const [eingabe, ausgabe] = process.argv.slice(2);
 if (!eingabe || !ausgabe) {
@@ -7,5 +7,5 @@ if (!eingabe || !ausgabe) {
   process.exit(1);
 }
 const text = readFileSync(eingabe, 'utf8');
-writeFileSync(ausgabe, istGebaeude(JSON.parse(text)) ? gebaeudeDateiAlsKarte(text).svg : stadtDateiAlsSvg(text));
+writeFileSync(ausgabe, istHoehle(JSON.parse(text)) ? hoehleDateiAlsKarte(text).svg : istGebaeude(JSON.parse(text)) ? gebaeudeDateiAlsKarte(text).svg : stadtDateiAlsSvg(text));
 console.log(`${ausgabe} geschrieben`);

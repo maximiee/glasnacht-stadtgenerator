@@ -29,3 +29,6 @@ Umriss (Mauer, Fluss, Küste), Viertel, Tore, Straßen, Brücken, Häuser, Orte,
 
 ## Gebäudepläne
 Grundrisse für einzelne Gebäude: JSON mit `name`, `etagen` (oder `raeume` für ein Stockwerk), je Raum `name`, `art`, `flaeche`, `kurz`. Der Generator teilt die Grundfläche, setzt Türen (alle Räume erreichbar), Fenster, Treppenhaus und Möbel; Beispiele in `beispiele/`. `gebaeudeDateiAlsKarte(json)` liefert SVG und die nummerierten Räume. `npm run svg -- beispiele/gasthaus.json out.svg` erkennt Gebäude an `raeume`/`etagen`.
+
+## Höhlenpläne
+Höhlen als Kammern mit Gängen: JSON mit `name`, `kammern` (je `name`, `art`, `durchmesser`, `kurz`) und optional `verbindungen` als Namenspaare. Der Generator legt die Kammern um die erste herum, verbindet alle über schlängelnde Gänge (plus ein paar Schleifen), führt einen Zugang nach außen und zeichnet Fels, Tropfsteine, Seen, Schächte usw. Höchstens 16 Kammern. `hoehleDateiAlsKarte(json)` liefert SVG und nummerierte Kammern; `npm run svg -- beispiele/hoehle.json out.svg` erkennt Höhlen an `kammern`. Anbindung an die App: `docs/Anbindung_Hoehle.md`.

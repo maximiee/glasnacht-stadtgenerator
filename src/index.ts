@@ -6,6 +6,8 @@ import { legeBeschriftung } from './beschriftung';
 import { WIDTH, HEIGHT } from './geometry';
 import { erzeugeGebaeude, liesGebaeude } from './gebaeude';
 import { rendereGebaeude, type GebaeudeKarte } from './gebaeudeRender';
+import { erzeugeHoehle, liesHoehle } from './hoehle';
+import { rendereHoehle, type HoehleKarte } from './hoehleRender';
 
 export { erzeugeUmriss, erzeugeStadtplan, rendereSvg, liesStadt, umrissOptionen };
 export type { UmrissOptionen, StadtDatei };
@@ -63,4 +65,18 @@ export function gebaeudeDateiAlsKarte(json: string | unknown): GebaeudeKarte {
 /** Ob ein JSON ein Gebäude (mit `raeume` oder `etagen`) statt einer Stadt beschreibt. */
 export function istGebaeude(json: unknown): boolean {
   return typeof json === 'object' && json !== null && ('raeume' in json || 'etagen' in json);
+}
+
+export { liesHoehle, erzeugeHoehle, KAMMER_ARTEN, HOEHLE_MAX_KAMMERN } from './hoehle';
+export type { HoehleDatei, KammerArt, KammerEingabe, Hoehlenplan } from './hoehle';
+export { rendereHoehle, type HoehleKarte } from './hoehleRender';
+
+/** Höhlen-JSON laden, Plan erzeugen und zeichnen; dazu die nummerierten Kammern mit Kurztext. */
+export function hoehleDateiAlsKarte(json: string | unknown): HoehleKarte {
+  return rendereHoehle(erzeugeHoehle(liesHoehle(json)));
+}
+
+/** Ob ein JSON eine Höhle (mit `kammern`) beschreibt. */
+export function istHoehle(json: unknown): boolean {
+  return typeof json === 'object' && json !== null && 'kammern' in json;
 }
