@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "name": "Von Aurenhall nach Kaimar",
+  "stationen": [
+    { "name": "Aurenhall", "ort": "Aurenhall", "kurz": "Start in der Kaiserstadt." },
+    { "name": "Silberbrück", "ort": "Silberbrück", "weg": "strasse" },
+    { "name": "Kleebühl", "ort": "Kleebühl" },
+    { "name": "Furt", "x": 1080, "y": 700, "punkt": true },
+    { "name": "Orakelstadt", "ort": "Orakelstadt", "weg": "pfad" },
+    { "name": "Dornwacht", "ort": "Dornwacht", "weg": "strasse" },
+    { "name": "Kaimar", "ort": "Kaimar", "kurz": "Ziel: der Hafen am Binnenmeer." }
+  ]
+}

@@ -8,6 +8,8 @@ import { erzeugeGebaeude, liesGebaeude } from './gebaeude';
 import { rendereGebaeude, type GebaeudeKarte } from './gebaeudeRender';
 import { erzeugeHoehle, liesHoehle } from './hoehle';
 import { rendereHoehle, type HoehleKarte } from './hoehleRender';
+import { erzeugeRoute, liesRoute, type OrtListe } from './route';
+import { rendereRoute, ROUTE_FLAECHE, type KartenBild, type RoutenKarte } from './routeRender';
 
 export { erzeugeUmriss, erzeugeStadtplan, rendereSvg, liesStadt, umrissOptionen };
 export type { UmrissOptionen, StadtDatei };
@@ -79,4 +81,18 @@ export function hoehleDateiAlsKarte(json: string | unknown): HoehleKarte {
 /** Ob ein JSON eine Höhle (mit `kammern`) beschreibt. */
 export function istHoehle(json: unknown): boolean {
   return typeof json === 'object' && json !== null && 'kammern' in json;
+}
+
+export { liesRoute, erzeugeRoute, WEG_ARTEN, ROUTE_MAX_STATIONEN, KM_PRO_PIXEL } from './route';
+export type { RouteDatei, StationEingabe, Routenplan, OrtListe, WegArt } from './route';
+export { rendereRoute, type RoutenKarte, type KartenBild } from './routeRender';
+
+/** Routen-JSON laden und als Ausschnitt der Weltkarte zeichnen; `orte` löst Ortsnamen in Pixel auf, `bild` ist die Weltkarte. */
+export function routeDateiAlsKarte(json: string | unknown, orte: OrtListe, bild: KartenBild): RoutenKarte {
+  return rendereRoute(erzeugeRoute(liesRoute(json), orte, bild, ROUTE_FLAECHE.w / ROUTE_FLAECHE.h), bild);
+}
+
+/** Ob ein JSON eine Reiseroute (mit `stationen`) beschreibt. */
+export function istRoute(json: unknown): boolean {
+  return typeof json === 'object' && json !== null && 'stationen' in json;
 }
