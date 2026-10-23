@@ -252,8 +252,8 @@ export function rendereSvg(u: Stadtplan, name = u.name): string {
   const grund = `font-family="${SCHRIFT}" fill="${F.text}" stroke="${F.pergament}" paint-order="stroke" stroke-linejoin="round"`;
   for (const l of legeBeschriftung(u)) {
     const gross = l.art === 'viertel';
-    const attr = gross ? `${grund} letter-spacing="3" font-size="19" font-weight="600" stroke-width="4.5"` : `${grund} font-size="13" font-style="italic" stroke-width="3.5"`;
-    const hoehe = gross ? 22 : 15;
+    const attr = gross ? `${grund} letter-spacing="${f(3 * l.groesse / 19)}" font-size="${f(l.groesse)}" font-weight="600" stroke-width="4.5"` : `${grund} font-size="13" font-style="italic" stroke-width="3.5"`;
+    const hoehe = gross ? 22 * l.groesse / 19 : 15;
     const spans = l.zeilen.map((z, i) => `<tspan x="${f(l.x)}" dy="${i ? hoehe : 0}">${z}</tspan>`).join('');
     t.push(`<text x="${f(l.x)}" y="${f(l.y)}" text-anchor="${l.anker}" ${attr}>${spans}</text>`);
     t.push(`<circle cx="${f(l.marke.x)}" cy="${f(l.marke.y)}" r="9" fill="${F.tinte}" stroke="${F.pergament}" stroke-width="1.5"/><text x="${f(l.marke.x)}" y="${f(l.marke.y + 4)}" text-anchor="middle" font-family="${SCHRIFT}" font-size="11" font-weight="700" fill="${F.pergament}">${l.nr}</text>`);
