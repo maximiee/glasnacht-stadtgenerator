@@ -21,9 +21,9 @@ export interface StadtDatei {
   gelaende?: Gelaende;
   tore?: number;
   /** Feste Viertel mit Namen. Lage und Fläche bestimmt der Generator, sofern keine `lage` gesetzt ist. */
-  viertel?: { name: string; lage?: ViertelLage }[];
+  viertel?: { name: string; lage?: ViertelLage; kurz?: string }[];
   /** Orte (POI) aus den Glasnacht-Daten, werden später in ihr Viertel gesetzt. */
-  orte?: { name: string; art?: string; viertel?: string }[];
+  orte?: { name: string; art?: string; viertel?: string; kurz?: string }[];
 }
 
 /** Lage eines Viertels in der Stadt; `wasser` = zur Küste bzw. zum Fluss hin (ohne Wasser: Rand). */

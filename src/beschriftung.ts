@@ -7,9 +7,18 @@ export interface Beschriftung {
   y: number;
   anker: 'middle' | 'start' | 'end';
   art: 'viertel' | 'ort';
+  /** Name wie in der Stadt-JSON (die Zeilen sind groß geschrieben bzw. umbrochen). */
+  name: string;
+  /** Nummer ab 1: erst die Viertel, dann die Orte (wie auf dem Plan und in der Liste der App). */
+  nr: number;
+  /** Mitte der Nummernmarke links neben dem Namen. */
+  marke: Point;
 }
 
 interface Rechteck { x0: number; y0: number; x1: number; y1: number }
+
+/** Rechteck eines Namens; Marken sitzen links daneben. */
+const MARKE_ABSTAND = 13;
 
 const BREITE = { viertel: 16.5, ort: 6.4 };
 const ZEILE = { viertel: 22, ort: 15 };
@@ -49,7 +58,7 @@ export function legeBeschriftung(plan: Stadtplan): Beschriftung[] {
   for (const o of plan.orte) { const h = o.art === 'burg' ? 32 : 11; belegt.push({ x0: o.mitte.x - h, y0: o.mitte.y - h * 0.8, x1: o.mitte.x + h, y1: o.mitte.y + h * 0.8 }); }
   const out: Beschriftung[] = [];
 
-  const versuche = (basis: Point, kandidaten: [number, number, Beschriftung['anker']][], zeilen: string[], art: Beschriftung['art'], imStadtgebiet: boolean) => {
+  const versuche = (basis: Point, kandidaten: [number, number, Beschriftung['anker']][], zeilen: string[], art: Beschriftung['art'], imStadtgebiet: boolean, name: string) => {
     let wahl: { x: number; y: number; anker: Beschriftung['anker']; r: Rechteck } | null = null;
     for (const [dx, dy, anker] of kandidaten) {
       const x = basis.x + dx;
@@ -68,17 +77,20 @@ export function legeBeschriftung(plan: Stadtplan): Beschriftung[] {
       const [dx, dy, anker] = kandidaten[0]!;
       wahl = { x: basis.x + dx, y: basis.y + dy, anker, r: rechteck(zeilen, basis.x + dx, basis.y + dy, anker, art) };
     }
-    belegt.push(wahl.r);
-    out.push({ zeilen, x: wahl.x, y: wahl.y, anker: wahl.anker, art });
+    // Die Marke bekommt Platz links vom Namen, damit sie nichts verdeckt.
+    const marke = { x: wahl.r.x0 - MARKE_ABSTAND, y: wahl.r.y0 + ZEILE[art] / 2 + 1 };
+    belegt.push({ ...wahl.r, x0: wahl.r.x0 - 2 * MARKE_ABSTAND });
+    out.push({ zeilen, x: wahl.x, y: wahl.y, anker: wahl.anker, art, name, nr: out.length + 1, marke });
   };
 
   const vOff: [number, number, Beschriftung['anker']][] = [[0, 0, 'middle'], [0, -28, 'middle'], [0, 28, 'middle'], [-60, 0, 'middle'], [60, 0, 'middle'], [0, -56, 'middle'], [0, 56, 'middle'], [-60, -28, 'middle'], [60, 28, 'middle'], [-60, 28, 'middle'], [60, -28, 'middle']];
-  for (const v of plan.viertel) if (v.name) versuche(v.mitte, vOff, umbrechen(v.name.toUpperCase(), 14), 'viertel', true);
+  const rang = (name: string) => { const i = plan.reihenfolge.indexOf(name); return i < 0 ? 1e6 : i; };
+  for (const v of [...plan.viertel].sort((a, b) => rang(a.name) - rang(b.name))) if (v.name) versuche(v.mitte, vOff, umbrechen(v.name.toUpperCase(), 14), 'viertel', true, v.name);
 
-  for (const o of plan.orte) {
+  for (const o of [...plan.orte].sort((a, b) => rang(a.name) - rang(b.name))) {
     const z = umbrechen(o.name, 24);
     const d = o.art === 'burg' ? 34 : 14;
-    versuche(o.mitte, [[d, 4, 'start'], [-d, 4, 'end'], [0, -d, 'middle'], [0, d + 12, 'middle'], [d, -12, 'start'], [-d, -12, 'end'], [d, 20, 'start'], [-d, 20, 'end']], z, 'ort', false);
+    versuche(o.mitte, [[d, 4, 'start'], [-d, 4, 'end'], [0, -d, 'middle'], [0, d + 12, 'middle'], [d, -12, 'start'], [-d, -12, 'end'], [d, 20, 'start'], [-d, 20, 'end']], z, 'ort', false, o.name);
   }
   return out;
 }

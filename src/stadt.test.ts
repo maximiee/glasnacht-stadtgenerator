@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { stadtDateiAlsSvg } from './index';
+import { stadtDateiAlsKarte, stadtDateiAlsSvg } from './index';
 import { liesStadt, umrissOptionen } from './stadt';
 
 describe('liesStadt', () => {
@@ -120,4 +120,27 @@ describe('Nichts im Wasser, nichts übereinander', () => {
       expect(p.parks.length).toBeGreaterThan(0);
     });
   }
+});
+
+describe('Stadtkarte mit Marken', () => {
+  it('nummeriert Viertel und Orte lückenlos und übernimmt die Kurztexte', () => {
+    const k = stadtDateiAlsKarte({
+      version: 1,
+      name: 'Probe',
+      einwohner: 8000,
+      viertel: [{ name: 'Altstadt', kurz: 'Alt.' }, { name: 'Hafen' }],
+      orte: [{ name: 'Rathaus', viertel: 'Altstadt', kurz: 'Hier wird regiert.' }],
+    });
+    expect(k.marken.map(m => m.nr)).toEqual(k.marken.map((_, i) => i + 1));
+    expect(k.marken.map(m => m.name)).toEqual(['Altstadt', 'Hafen', 'Rathaus']);
+    expect(k.marken.find(m => m.name === 'Altstadt')?.kurz).toBe('Alt.');
+    expect(k.marken.find(m => m.name === 'Rathaus')).toMatchObject({ art: 'ort', kurz: 'Hier wird regiert.' });
+    for (const m of k.marken) {
+      expect(m.x).toBeGreaterThan(0);
+      expect(m.x).toBeLessThan(k.breite);
+      expect(m.y).toBeGreaterThan(0);
+      expect(m.y).toBeLessThan(k.hoehe);
+    }
+    expect(k.svg).toContain('<svg');
+  });
 });

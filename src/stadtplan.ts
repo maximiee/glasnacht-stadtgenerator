@@ -12,6 +12,8 @@ export interface Stadtplan extends Umriss {
   gelaende: Gelaende;
   /** Maßstab: so viele Meter entsprechen einer Zeichnungseinheit. */
   meterProEinheit: number;
+  /** Namen aus der JSON in ihrer Reihenfolge (Viertel, dann Orte): bestimmt die Nummern auf dem Plan. */
+  reihenfolge: string[];
   viertel: ViertelZelle[];
   grenzen: [Point, Point][];
   /** Straßen als Linienzüge, von der Mitte durch die Tore nach außen. */
@@ -156,7 +158,7 @@ export function erzeugeStadtplan(s: StadtDatei): Stadtplan {
       break;
     }
   }
-  const plan: Stadtplan = { ...umriss, name: s.name, gelaende: s.gelaende ?? 'gras', meterProEinheit: meterProEinheit(s), viertel: zellen, grenzen, strassen, haeuser: [], orte: [], baeume: [], plaetze: [], parks: [], felder: [], hafen: null, platz };
+  const plan: Stadtplan = { ...umriss, name: s.name, gelaende: s.gelaende ?? 'gras', meterProEinheit: meterProEinheit(s), reihenfolge: [...(s.viertel ?? []), ...(s.orte ?? [])].map(e => e.name), viertel: zellen, grenzen, strassen, haeuser: [], orte: [], baeume: [], plaetze: [], parks: [], felder: [], hafen: null, platz };
   const einwohner = s.einwohner ?? 15000;
   plan.hafen = erzeugeHafen(createRng(`${seed}#hafen`), plan, einwohner);
   const ausstattung = erzeugePlaetzeUndParks(createRng(`${seed}#plaetze`), plan, einwohner);

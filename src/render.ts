@@ -256,6 +256,7 @@ export function rendereSvg(u: Stadtplan, name = u.name): string {
     const hoehe = gross ? 22 : 15;
     const spans = l.zeilen.map((z, i) => `<tspan x="${f(l.x)}" dy="${i ? hoehe : 0}">${z}</tspan>`).join('');
     t.push(`<text x="${f(l.x)}" y="${f(l.y)}" text-anchor="${l.anker}" ${attr}>${spans}</text>`);
+    t.push(`<circle cx="${f(l.marke.x)}" cy="${f(l.marke.y)}" r="9" fill="${F.tinte}" stroke="${F.pergament}" stroke-width="1.5"/><text x="${f(l.marke.x)}" y="${f(l.marke.y + 4)}" text-anchor="middle" font-family="${SCHRIFT}" font-size="11" font-weight="700" fill="${F.pergament}">${l.nr}</text>`);
   }
 
   // Alterung über allem: Körnung und dunkle Ränder
