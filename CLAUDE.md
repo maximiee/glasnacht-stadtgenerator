@@ -6,3 +6,4 @@
 - Eigener Algorithmus. Kein Code aus TownGeneratorOS übernehmen (GPLv3).
 - Stil der Karten: `docs/Stilvorlage.md` und `docs/stilvorlage_fenwell_market.png`.
 - Alles Zufällige läuft über `src/rng.ts`, nie `Math.random()`.
+- Das Repo ist öffentlich: keine Inhalte aus Glasnacht (Bildlisten, Prompts zu Personen und Abenteuern, Schlüssel). Das Bildwerkzeug (`src/bilder/`) bekommt Listen und Schlüssel von außen.

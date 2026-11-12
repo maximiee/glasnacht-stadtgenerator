@@ -16,8 +16,17 @@ npm run svg -- beispiele/thalassa.json out/thalassa.svg
 
 Pflicht sind `version` (1) und `name`. Optional: `seed`, `radius`, `wasser` (`fluss`, `kueste`, `keins`), `einwohner` (bestimmt Größe und Maßstab), `mauer`, `lage` (Himmelsrichtung des Meeres bzw. Flussachse), `gelaende` (`gras`, `wueste`, `eis`, `gebirge`), `viertel`, `orte`. Viertel (Grenzen und Namen), Tore und Straßen werden gezeichnet; Häuser, Orte, Plätze, Parks und Gärten, an der Küste Kai, Stege und Schiffe.
 
+## Bilder über die Gemini-API
+Eigener Einstieg `glasnacht-stadtgenerator/bilder` (Ordner `src/bilder/`), damit die Stadtpläne ohne Bildbibliothek auskommen:
+
+- `bildErzeugen({ key, prompt, format, vorbilder })` schickt Prompt und Stilvorbilder an Gemini (`gemini-nano-banana-2.1`), schneidet auf das Seitenverhältnis zu und liefert WebP (höchstens 1280 px breit). Der Schlüssel wird hereingereicht; lehnt das Modell ein Format ab, nimmt es das nächstliegende und schneidet zu, bei 429/5xx versucht es es erneut.
+- `wunschlisteLesen(text)` liest offene Einträge (`### [ ] Titel`, Zeile „- Datei: `pfad` · Art: art“, Prompt im ```text-Block). Personen werden 4:5, alles andere 3:2.
+- `npm run bilder -- <liste.md> <ausgabeordner> [--vorbild <datei>]… [--fertig <ordner>] [--nur n] [--eintrag text] [--neu] [--trocken] [--env <.env>]` arbeitet eine Liste ab. Schlüssel aus `GEMINI_API_KEY` oder der `.env`-Datei.
+
+Bildlisten, Vorbilder und erzeugte Bilder gehören nicht in dieses Repo.
+
 ## Technik
-TypeScript, Vite, Vitest. Eigener Algorithmus, **kein** Code aus TownGeneratorOS (GPLv3) übernommen.
+TypeScript, Vite, Vitest; für Bilder `sharp`. Eigener Algorithmus, **kein** Code aus TownGeneratorOS (GPLv3) übernommen.
 
 ## Befehle
 - `npm install`
