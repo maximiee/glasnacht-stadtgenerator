@@ -96,6 +96,18 @@ describe('bildErzeugen', () => {
     expect(bild.verhaeltnis).toBe('3:2');
   });
 
+  it('gibt bei gesperrtem Modell sofort auf', async () => {
+    let n = 0;
+    const holen = (async () => {
+      n++;
+      return new Response('{"error":{"message":"Rate limit exceeded (limit: 0 requests per day on Free Tier)"}}', { status: 429 });
+    }) as typeof fetch;
+    const fehler = await bildErzeugen({ key: 'k', prompt: 'x', format: '3:2', holen, warten: async () => {} }).catch(e => e);
+    expect(fehler).toBeInstanceOf(BildFehler);
+    expect(fehler.endgueltig).toBe(true);
+    expect(n).toBe(1);
+  });
+
   it('meldet andere Fehler und Antworten ohne Bild', async () => {
     const verboten = (async () => new Response('no billing', { status: 403 })) as typeof fetch;
     await expect(bildErzeugen({ key: 'k', prompt: 'x', format: '3:2', holen: verboten })).rejects.toThrow(BildFehler);

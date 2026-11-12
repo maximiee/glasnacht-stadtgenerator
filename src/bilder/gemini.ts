@@ -35,7 +35,12 @@ export interface BildAuftrag {
   melden?: (text: string) => void;
 }
 
-export class BildFehler extends Error {}
+export class BildFehler extends Error {
+  /** `endgueltig`: weitere Versuche mit diesem Schlüssel sind zwecklos */
+  constructor(meldung: string, readonly endgueltig = false) {
+    super(meldung);
+  }
+}
 
 /** Erzeugt ein Bild über die Gemini-API und gibt es als WebP im gewünschten Format zurück. */
 export async function bildErzeugen(a: BildAuftrag): Promise<FertigesBild & { verhaeltnis: Seitenverhaeltnis }> {
@@ -64,6 +69,10 @@ export async function bildErzeugen(a: BildAuftrag): Promise<FertigesBild & { ver
         melden(`Seitenverhältnis ${verhaeltnis} abgelehnt, nehme ${ersatz} und schneide zu`);
         verhaeltnis = ersatz;
         continue;
+      }
+      // „limit: 0“ heißt: Das Modell ist für diesen Schlüssel gesperrt (z. B. kostenlose Stufe), Warten hilft nicht.
+      if (antwort.status === 429 && /limit: 0\b/.test(text)) {
+        throw new BildFehler(`Gemini: Modell für diesen Schlüssel gesperrt (Abrechnung nötig): ${text.slice(0, 300)}`, true);
       }
       if ([429, 500, 502, 503, 504].includes(antwort.status) && versuch < 3) {
         melden(`HTTP ${antwort.status}, neuer Versuch`);

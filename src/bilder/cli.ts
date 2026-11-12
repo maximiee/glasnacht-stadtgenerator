@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, extname, join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { bildErzeugen, GEMINI_MODELL } from './gemini';
+import { BildFehler, bildErzeugen, GEMINI_MODELL } from './gemini';
 import { wunschlisteLesen } from './liste';
 
 const PREIS_JE_BILD = 0.034; // US-Dollar, Nano Banana 2.1 in 1K (Stand 12.11.2026)
@@ -87,6 +87,10 @@ for (const [i, w] of offen.entries()) {
     fertig++;
   } catch (e) {
     console.error(`  ${e instanceof Error ? e.message : String(e)}`);
+    if (e instanceof BildFehler && e.endgueltig) {
+      console.error('Abgebrochen, die übrigen Bilder würden genauso scheitern.');
+      break;
+    }
   }
 }
 console.log(`Fertig: ${fertig} von ${offen.length} in ${ausgabe}`);
