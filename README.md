@@ -16,6 +16,8 @@ npm run svg -- beispiele/thalassa.json out/thalassa.svg
 
 Pflicht sind `version` (1) und `name`. Optional: `seed`, `radius`, `wasser` (`fluss`, `kueste`, `keins`), `einwohner` (bestimmt Größe und Maßstab), `mauer`, `lage` (Himmelsrichtung des Meeres bzw. Flussachse), `gelaende` (`gras`, `wueste`, `eis`, `gebirge`), `viertel`, `orte`. Viertel (Grenzen und Namen), Tore und Straßen werden gezeichnet; Häuser, Orte, Plätze, Parks und Gärten, an der Küste Kai, Stege und Schiffe.
 
+Gemalte Pläne: `stadtDateiAlsKarte(json, { art: 'grundriss' })` zeichnet nur Gelände, Wasser, Häuser, Straßen und Mauer (ohne Schrift, Marken, Rahmen, Maßstab, Kompass) als Vorlage für ein Bildmodell. `stadtDateiAlsKarte(json, { art: 'ueber', hintergrund })` legt das gemalte Bild (URL oder data:-URI, so groß wie der Plan) unter Marken, Namen, Rahmen, Titel, Maßstab und Kompass.
+
 ## Bilder über die Gemini-API
 Eigener Einstieg `glasnacht-stadtgenerator/bilder` (Ordner `src/bilder/`), damit die Stadtpläne ohne Bildbibliothek auskommen:
 

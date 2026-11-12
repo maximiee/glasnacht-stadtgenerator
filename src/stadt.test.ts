@@ -18,6 +18,20 @@ describe('liesStadt', () => {
     const j = '{"version":1,"name":"Thalassa","wasser":"kueste"}';
     expect(stadtDateiAlsSvg(j)).toBe(stadtDateiAlsSvg(j));
   });
+
+  it('zeichnet nur den Grundriss oder die genaue Ebene über einem gemalten Bild', () => {
+    const j = { version: 1, name: 'Thalassa', wasser: 'kueste', viertel: [{ name: 'Hafen' }], orte: [{ name: 'Leuchtturm', viertel: 'Hafen' }] };
+    const alles = stadtDateiAlsKarte(j);
+    const grundriss = stadtDateiAlsKarte(j, { art: 'grundriss' }).svg;
+    const ueber = stadtDateiAlsKarte(j, { art: 'ueber', hintergrund: 'data:image/webp;base64,AAAA' });
+    expect(alles.svg).toContain('Leuchtturm');
+    expect(grundriss).not.toMatch(/<text|<image/);
+    expect(grundriss).toContain('fill="#ecd9a6"');
+    expect(ueber.svg).toContain('<image href="data:image/webp;base64,AAAA"');
+    expect(ueber.svg).toContain('Leuchtturm');
+    expect(ueber.svg).not.toContain('fill="#ecd9a6"/>');
+    expect(ueber.marken).toEqual(alles.marken);
+  });
 });
 
 describe('Stadtplan', () => {

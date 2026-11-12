@@ -1,6 +1,6 @@
 import { erzeugeUmriss, type UmrissOptionen } from './outline';
 import { erzeugeStadtplan } from './stadtplan';
-import { rendereSvg } from './render';
+import { rendereSvg, type Ebene } from './render';
 import { liesStadt, umrissOptionen, type StadtDatei } from './stadt';
 import { legeBeschriftung } from './beschriftung';
 import { WIDTH, HEIGHT } from './geometry';
@@ -12,7 +12,7 @@ import { erzeugeRoute, liesRoute, type OrtListe } from './route';
 import { rendereRoute, ROUTE_FLAECHE, type KartenBild, type RoutenKarte } from './routeRender';
 
 export { erzeugeUmriss, erzeugeStadtplan, rendereSvg, liesStadt, umrissOptionen };
-export type { UmrissOptionen, StadtDatei };
+export type { UmrissOptionen, StadtDatei, Ebene };
 
 export const stadtAlsSvg = (opt: UmrissOptionen, name = 'Stadt') => rendereSvg(erzeugeStadtplan({ version: 1, name, ...opt }), name);
 
@@ -39,8 +39,11 @@ export interface StadtKarte {
   marken: Marke[];
 }
 
-/** Wie `stadtDateiAlsSvg`, dazu die nummerierten Marken (Viertel zuerst, dann Orte) mit ihren `kurz`-Texten. */
-export function stadtDateiAlsKarte(json: string | unknown): StadtKarte {
+/**
+ * Wie `stadtDateiAlsSvg`, dazu die nummerierten Marken (Viertel zuerst, dann Orte) mit ihren `kurz`-Texten.
+ * `ebene`: nur der Grundriss oder die genaue Ebene über einem gemalten Bild (siehe `Ebene`).
+ */
+export function stadtDateiAlsKarte(json: string | unknown, ebene?: Ebene): StadtKarte {
   const s = liesStadt(json);
   const plan = erzeugeStadtplan(s);
   const kurz = new Map<string, string>([...(s.viertel ?? []), ...(s.orte ?? [])].map(e => [e.name, e.kurz ?? '']));
@@ -52,7 +55,7 @@ export function stadtDateiAlsKarte(json: string | unknown): StadtKarte {
     y: Math.round(l.marke.y),
     kurz: kurz.get(l.name) ?? '',
   }));
-  return { svg: rendereSvg(plan, s.name), breite: WIDTH, hoehe: HEIGHT, marken };
+  return { svg: rendereSvg(plan, s.name, ebene), breite: WIDTH, hoehe: HEIGHT, marken };
 }
 
 export { liesGebaeude, erzeugeGebaeude, RAUM_ARTEN, GEBAEUDE_MAX_ETAGEN, GEBAEUDE_MAX_RAEUME } from './gebaeude';
