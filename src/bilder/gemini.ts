@@ -23,6 +23,8 @@ export interface BildAuftrag {
   prompt: string;
   format: Seitenverhaeltnis;
   vorbilder?: Vorbild[];
+  /** Steht vor dem Prompt, wenn Vorbilder mitgehen; Standard `VORBILD_HINWEIS`. Leer, wenn der Prompt die Bilder selbst erklärt. */
+  vorbildHinweis?: string;
   modell?: string;
   /** `1K`, `2K` oder `4K` */
   groesse?: '1K' | '2K' | '4K';
@@ -56,7 +58,7 @@ export async function bildErzeugen(a: BildAuftrag): Promise<FertigesBild & { ver
       body: JSON.stringify({
         model: a.modell ?? GEMINI_MODELL,
         input: [
-          { type: 'text', text: (vorbilder.length ? VORBILD_HINWEIS : '') + a.prompt },
+          { type: 'text', text: (vorbilder.length ? (a.vorbildHinweis ?? VORBILD_HINWEIS) : '') + a.prompt },
           ...vorbilder.map(v => ({ type: 'image', mime_type: v.mime, data: Buffer.from(v.daten).toString('base64') })),
         ],
         response_format: { type: 'image', aspect_ratio: verhaeltnis, image_size: a.groesse ?? '1K' },

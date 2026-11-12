@@ -88,6 +88,16 @@ describe('bildErzeugen', () => {
     expect(zweite.input[1]).toEqual({ type: 'image', mime_type: 'image/jpeg', data: 'AQID' });
   });
 
+  it('lässt den Vorbild-Hinweis weg, wenn der Prompt die Bilder selbst erklärt', async () => {
+    let body = '';
+    const holen = (async (_url: string, init: RequestInit) => {
+      body = String(init.body);
+      return antwortMitBild();
+    }) as typeof fetch;
+    await bildErzeugen({ key: 'k', prompt: 'repaint image 1', format: '1:1', vorbilder: [{ daten: new Uint8Array([1]), mime: 'image/png' }], vorbildHinweis: '', holen });
+    expect(JSON.parse(body).input[0]).toEqual({ type: 'text', text: 'repaint image 1' });
+  });
+
   it('versucht es bei Überlastung erneut', async () => {
     let n = 0;
     const holen = (async () => (++n === 1 ? new Response('busy', { status: 503 }) : antwortMitBild())) as typeof fetch;
